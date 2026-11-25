@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/nomux-sh/extension-api/main/schema/extension.schema.json",
+  "title": "nomux extension manifest",
+  "description": "The manifest of a nomux extension package: extension.toml.",
+  "type": "object",
+  "required": ["extension"],
+  "additionalProperties": false,
+  "properties": {
+    "extension": {
+      "description": "The identity of the extension.",
+      "type": "object",
+      "required": ["id", "name", "version", "api"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "The identifier of the extension: two or more parts with `.` between them, for example `nomux.git`. A part starts with a lower-case letter and has only lower-case letters, digits and `-`.",
+          "type": "string",
+          "maxLength": 64,
+          "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$"
+        },
+        "name": {
+          "description": "The name of the extension for the user.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "\\S"
+        },
+        "version": {
+          "description": "The version of the extension (Semantic Versioning 2.0.0).",
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(\\.(0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(\\+([0-9a-zA-Z-]+(\\.[0-9a-zA-Z-]+)*))?$"
+        },
+        "api": {
+          "description": "The extension API versions that the extension can use, as a caret requirement: `^1`, `^1.2` or `^1.2.3`.",
+          "type": "string",
+          "pattern": "^\\^(0|[1-9][0-9]*)(\\.(0|[1-9][0-9]*)){0,2}$"
+        }
+      }
+    },
+    "daemon": {
+      "description": "The daemon part: a process that the nomux daemon starts on the Host.",
+      "type": "object",
+      "required": ["command"],
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "description": "The program of the daemon part: a relative path in the package.",
+          "$ref": "#/$defs/packagePath"
+        },
+        "lazy": {
+          "description": "`true`: the host starts the daemon part only when a client needs it. `false`: the host starts it together with the daemon.",
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "ui": {
+      "description": "The UI part: a WASM component that the client runs.",
+      "type": "object",
+      "required": ["component"],
+      "additionalProperties": false,
+      "properties": {
+        "component": {
+          "description": "The WASM component of the UI part: a relative path in the package.",
+          "$ref": "#/$defs/packagePath"
+        },
+        "slots": {
+          "description": "The slots that the UI part fills, for example `sidebar.section` or `tab.kind:diff`.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)*(:[a-z][a-z0-9-]*)?$"
+          }
+        }
+      }
+    },
+    "permissions": {
+      "description": "The permissions that the extension asks for. The user approves them at installation.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fs": {
+          "description": "The directories that the extension reads and writes. An item is an absolute path, or it starts with `${worktree}`.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^(/|\\$\\{worktree\\}|(\\$\\{worktree\\})?(/(?!\\.{1,2}(/|$))(?![^/]*\\$\\{)[^/]+)+)$"
+          }
+        },
+        "process": {
+          "description": "The programs that the extension starts. An item is a program name without a directory.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[^/\\\\\\s]+$"
+          }
+        },
+        "network": {
+          "description": "`true` if the extension opens network connections.",
+          "type": "boolean",
+          "default": false
+        },
+        "scopes": {
+          "description": "The scopes of host services that the extension uses: a service name, `:` and an access name, for example `sessions:read`.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "packagePath": {
+      "type": "string",
+      "pattern": "^(?!\\.{1,2}(/|$))[^/\\\\]+(/(?!\\.{1,2}(/|$))[^/\\\\]+)*$"
+    }
+  }
+}

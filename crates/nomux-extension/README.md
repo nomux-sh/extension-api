@@ -13,6 +13,7 @@ The crate has these parts now:
 - `Extension`: the methods of an extension and its run loop. It does the handshake, runs the methods that the host calls, and stops when the host tells it to stop.
 - `Host`: events, calls of host services and the permissions that the user approved.
 - `wire::v1` and `frame`: the messages and the framing of the extension protocol. A host uses them to speak with an extension.
+- `manifest` (feature `manifest`): the types and the validator of `extension.toml`. An extension does not need this feature.
 
 The nomux daemon does not supply host services yet. The UI part of an extension is not in this crate. The [roadmap](https://github.com/nomux-sh/docs/blob/main/src/content/docs/project/roadmap.md) gives the plan.
 

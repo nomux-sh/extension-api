@@ -1,7 +1,7 @@
 [package]
 name = "nomux-extension"
 version = "0.1.0"
-description = "The nomux extension SDK: the daemon part of an extension"
+description = "The nomux extension SDK: the daemon part of an extension and the extension manifest"
 edition.workspace = true
 rust-version = "1.85"
 license.workspace = true
@@ -16,8 +16,22 @@ categories = ["api-bindings", "development-tools"]
 # `protoc`.
 include = ["src/**/*.rs", "tests/**/*.rs", "README.md", "LICENSE-APACHE", "LICENSE-MIT"]
 
+[features]
+# The types and the validator of `extension.toml`. An extension does not need
+# this feature. The nomux daemon and the `nomux` command-line client use it.
+manifest = ["dep:semver", "dep:toml"]
+
 [dependencies]
 prost.workspace = true
+semver = { workspace = true, optional = true }
+toml = { workspace = true, optional = true }
+
+[[test]]
+name = "manifest"
+required-features = ["manifest"]
+
+[package.metadata.docs.rs]
+all-features = true
 
 [lints]
 workspace = true

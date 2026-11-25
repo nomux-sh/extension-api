@@ -83,6 +83,8 @@
 //! - [`wire::v1`]: the messages of the protocol. `prost` generates these
 //!   types from the schemas of the `extension-api` repository.
 //! - [`frame`]: the framing. A host uses it to speak with an extension.
+//! - `manifest` (feature `manifest`): the types and the validator of
+//!   `extension.toml`. An extension does not need it.
 //!
 //! Versions earlier than 1.0.0 are pre-releases: interfaces can change
 //! between minor versions.
@@ -95,6 +97,8 @@ mod extension;
 pub mod frame;
 mod handshake;
 mod host;
+#[cfg(feature = "manifest")]
+pub mod manifest;
 mod outbound;
 mod pending_calls;
 mod reader;
