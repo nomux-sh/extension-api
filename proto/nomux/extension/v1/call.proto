@@ -1,0 +1,31 @@
+// Call messages of the nomux extension protocol.
+//
+// The request and the response are fields of `Request.body` and
+// `Response.result` (see envelope.proto). Calls have the field numbers 300 to
+// 399 there. The two peers send calls.
+//
+// STATUS: DRAFT. The messages can change in a minor version until version
+// 1.0.0.
+
+syntax = "proto3";
+
+package nomux.extension.v1;
+
+// Calls one method.
+message CallRequest {
+  // The name of the method.
+  //
+  // From the host: a method that the extension supplies, for example `echo`.
+  // From the extension: a method of a host service in the form
+  // `<service>.<method>`, for example `sessions.list`.
+  string method = 1;
+  // The argument of the method. The method specifies the encoding. The Rust
+  // SDK uses an encoded protobuf message.
+  bytes payload = 2;
+}
+
+// The reply to `CallRequest`.
+message CallResponse {
+  // The result of the method. The method specifies the encoding.
+  bytes payload = 1;
+}

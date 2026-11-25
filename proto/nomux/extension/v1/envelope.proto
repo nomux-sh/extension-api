@@ -1,0 +1,153 @@
+// The envelope of the nomux extension protocol.
+//
+// The daemon part of an extension is a separate process. The nomux daemon
+// (the host) starts it and exchanges `Envelope` messages with it on the
+// standard input and the standard output of the process. The specification is
+// in spec/extension-protocol.md.
+//
+// An envelope contains a request, a response, an event, or a cancellation:
+//
+// - Each of the two peers can send a `Request` with an `id`.
+// - The other peer sends one `Response` with the same `id`.
+// - The extension sends `Event` messages that no request asked for.
+// - The sender of a request sends `Cancel` to stop the request.
+//
+// STATUS: DRAFT. The messages can change in a minor version until version
+// 1.0.0.
+//
+// Field number plan for the `body` and `result` oneofs. Field numbers are
+// permanent, thus each group of messages has its own block:
+//
+//   1 to 15      Envelope fields (id, error). These numbers use one tag byte.
+//   16 to 99     Not assigned.
+//   100 to 199   Handshake.
+//   200 to 299   Life cycle.
+//   300 to 399   Calls.
+//   400 and up   Not assigned. Each new group takes the next free block of
+//                100 numbers.
+//
+// A request and its response use the same field number.
+// The plan is a comment and not a `reserved` statement: `buf breaking` does
+// not let you delete a reserved range, and each block must stay available to
+// its group.
+
+syntax = "proto3";
+
+package nomux.extension.v1;
+
+import "nomux/extension/v1/call.proto";
+import "nomux/extension/v1/handshake.proto";
+import "nomux/extension/v1/lifecycle.proto";
+
+// The reason for a failed request.
+//
+// The values 1 to 5 are equal to the values of `ErrorCode` in the nomux
+// control protocol (package `nomux.wire.v1`).
+enum ErrorCode {
+  // The sender did not set the field. The receiver treats this as
+  // `ERROR_CODE_FAILED`. The receiver does the same for a value that it does
+  // not know.
+  ERROR_CODE_UNSPECIFIED = 0;
+  // The request failed, and no other code gives the reason.
+  ERROR_CODE_FAILED = 1;
+  // The method or the item that the request names does not exist.
+  ERROR_CODE_NOT_FOUND = 2;
+  // The receiver did not complete the request in the permitted time.
+  ERROR_CODE_TIMEOUT = 3;
+  // The extension does not have the permission that the request needs.
+  ERROR_CODE_PERMISSION_DENIED = 4;
+  // The host does not supply the extension API version that the extension
+  // needs. Only the reply to `Hello` uses this code.
+  ERROR_CODE_VERSION_INCOMPATIBLE = 5;
+  // The receiver cannot read the payload of the request.
+  ERROR_CODE_INVALID_ARGUMENT = 6;
+  // The receiver stopped the request because the sender sent `Cancel`.
+  ERROR_CODE_CANCELLED = 7;
+}
+
+// The failure result of a request.
+message Error {
+  // The reason for the failure.
+  ErrorCode code = 1;
+  // A message in English for the user. The text is not stable: a peer must
+  // not parse it.
+  string message = 2;
+}
+
+// A numbered request from one peer to the other peer.
+message Request {
+  // The request number. The sender selects the value. The value is not 0 and
+  // is different from the `id` of each request of the same sender that has
+  // no response yet. Each peer has its own numbers.
+  uint64 id = 1;
+  // The request body. See the field number plan at the top of this file.
+  oneof body {
+    // Handshake: the first request. Only the host sends it.
+    Hello hello = 100;
+    // Life cycle: prepare for calls. Only the host sends it.
+    InitializeRequest initialize = 200;
+    // Life cycle: stop. Only the host sends it.
+    ShutdownRequest shutdown = 201;
+    // Life cycle: liveness check. Only the host sends it.
+    HealthRequest health = 202;
+    // A call. The host calls a method of the extension, or the extension
+    // calls a method of a host service.
+    CallRequest call = 300;
+  }
+}
+
+// The response to one request.
+message Response {
+  // The `id` of the request that this response answers.
+  uint64 id = 1;
+  // The result of the request. See the field number plan at the top of this
+  // file.
+  oneof result {
+    // The request failed.
+    Error error = 2;
+    // Handshake: the reply to `Hello`.
+    Welcome welcome = 100;
+    // The reply to `InitializeRequest`.
+    InitializeResponse initialize = 200;
+    // The reply to `ShutdownRequest`.
+    ShutdownResponse shutdown = 201;
+    // The reply to `HealthRequest`.
+    HealthResponse health = 202;
+    // The reply to `CallRequest`.
+    CallResponse call = 300;
+  }
+}
+
+// A message from the extension that no request asked for.
+message Event {
+  // The name of the event. The extension selects the name. The host adds the
+  // identifier of the extension, thus two extensions can use the same name.
+  string name = 1;
+  // The data of the event. The host does not read it.
+  bytes payload = 2;
+}
+
+// Tells the receiver to stop a request.
+message Cancel {
+  // The `id` of a request that the sender of this message sent before.
+  uint64 id = 1;
+}
+
+// One message between the host and the extension.
+message Envelope {
+  // The content of the envelope.
+  oneof kind {
+    // A request.
+    Request request = 1;
+    // The response to a request of the other peer.
+    Response response = 2;
+    // An event from the extension.
+    Event event = 3;
+    // The cancellation of a request.
+    Cancel cancel = 4;
+  }
+
+  // Field numbers 5 to 15 are free. Use them only for new kinds.
+  // Do not use a `reserved` statement for free numbers: `buf breaking` does
+  // not let you delete a reserved range later.
+}

@@ -1,0 +1,72 @@
+// Handshake messages of the nomux extension protocol.
+//
+// The handshake is the first exchange after the host starts the process of
+// the extension. The host sends `Hello` in the first `Request`. The extension
+// replies with `Welcome`, or with an `Error` (see envelope.proto).
+//
+// The version rule is in spec/extension-protocol.md.
+//
+// STATUS: DRAFT. The messages can change in a minor version until version
+// 1.0.0.
+
+syntax = "proto3";
+
+package nomux.extension.v1;
+
+// A version of the extension API. The extension API uses Semantic Versioning
+// 2.0.0 and its version is independent of the product version of nomux.
+message ApiVersion {
+  // The major version.
+  uint32 major = 1;
+  // The minor version.
+  uint32 minor = 2;
+  // The patch version.
+  uint32 patch = 3;
+}
+
+// The permissions that the user approved for the extension.
+//
+// The source is the `[permissions]` table of `extension.toml`. The host
+// applies the permissions. The extension reads them to know what it can do.
+message Permissions {
+  // The directories that the extension can read and write. Each item is an
+  // absolute path. The host replaced each variable of the manifest, for
+  // example `${worktree}`.
+  repeated string fs = 1;
+  // The programs that the extension can start. Each item is a program name.
+  repeated string process = 2;
+  // `true` if the extension can open network connections.
+  bool network = 3;
+  // The scopes of host services that the extension can use, for example
+  // `sessions:read`.
+  repeated string scopes = 4;
+
+  // Field numbers 5 to 15 are free. Use them only for new permission kinds.
+}
+
+// The first message from the host.
+message Hello {
+  // The extension API version that the host supplies.
+  ApiVersion api_version = 1;
+  // The identifier of the extension in its manifest, for example `nomux.git`.
+  string extension_id = 2;
+  // The permissions that the extension has.
+  Permissions permissions = 3;
+
+  // Field numbers 4 to 15 are free. Use them only for new handshake fields.
+  // Do not use a `reserved` statement for free numbers: `buf breaking` does
+  // not let you delete a reserved range later.
+}
+
+// The reply from the extension to `Hello`.
+message Welcome {
+  // The extension API version that the extension was built for.
+  ApiVersion api_version = 1;
+  // The identifier that the extension has in its code. The host stops the
+  // extension if the value is different from the identifier in the manifest.
+  string extension_id = 2;
+  // The version of the extension, for example `1.0.0`.
+  string extension_version = 3;
+
+  // Field numbers 4 to 15 are free. Use them only for new handshake fields.
+}

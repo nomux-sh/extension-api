@@ -1,0 +1,32 @@
+// Life cycle messages of the nomux extension protocol.
+//
+// The requests and the responses are fields of `Request.body` and
+// `Response.result` (see envelope.proto). The life cycle has the field
+// numbers 200 to 299 there. Only the host sends these requests.
+//
+// STATUS: DRAFT. The messages can change in a minor version until version
+// 1.0.0.
+
+syntax = "proto3";
+
+package nomux.extension.v1;
+
+// Tells the extension to prepare for calls. The host sends it one time, after
+// the handshake and before the first call.
+message InitializeRequest {}
+
+// The reply to `InitializeRequest`. After it, the extension accepts calls.
+message InitializeResponse {}
+
+// Tells the extension to stop. The host sends it when the extension is idle
+// or when the daemon stops.
+message ShutdownRequest {}
+
+// The reply to `ShutdownRequest`. The extension sends it and then exits.
+message ShutdownResponse {}
+
+// Asks the extension if it can still read and write messages.
+message HealthRequest {}
+
+// The reply to `HealthRequest`. An extension answers also while a call runs.
+message HealthResponse {}
