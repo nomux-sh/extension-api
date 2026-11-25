@@ -1,0 +1,19 @@
+[package]
+name = "nomux-echo"
+version = "0.1.0"
+description = "Example nomux extension: one method and one event"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+nomux-extension.workspace = true
+prost.workspace = true
+
+[dev-dependencies]
+nomux-extension = { workspace = true, features = ["manifest"] }
+
+[lints]
+workspace = true
