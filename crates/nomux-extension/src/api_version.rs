@@ -13,7 +13,7 @@ impl ApiVersion {
     pub const CURRENT: Self = Self {
         major: 0,
         minor: 1,
-        patch: 0,
+        patch: 1,
     };
 }
 
