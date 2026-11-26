@@ -1,6 +1,8 @@
 import process from "node:process";
 import type { Readable, Writable } from "node:stream";
 
+import { API_VERSION, MINIMUM_API_VERSION, formatVersion, isCompatible } from "./api-version.js";
+import type { ApiVersion } from "./api-version.js";
 import type { Call } from "./call.js";
 import type { MethodCodecs } from "./codec.js";
 import { Connection } from "./connection.js";
@@ -35,6 +37,7 @@ type Initialize = (host: Host) => void | Promise<void>;
 export class Extension {
   private readonly id: string;
   private readonly version: string;
+  private api: ApiVersion = MINIMUM_API_VERSION;
   private readonly methods = new Map<string, EncodedMethod>();
   private initializer: Initialize | undefined;
   private isInitialized = false;
@@ -49,6 +52,28 @@ export class Extension {
   constructor(id: string, version: string) {
     this.id = id;
     this.version = version;
+  }
+
+  /**
+   * States the lowest extension API version that the extension needs. The
+   * default is {@link MINIMUM_API_VERSION}. State a later version only if the
+   * extension uses a feature of that version, and give `api` in
+   * `extension.toml` the same minimum: version 0.1.1 and `api = "^0.1.1"`.
+   *
+   * The extension refuses a host whose version does not match the caret
+   * requirement of `version`.
+   *
+   * Throws if the SDK does not implement `version`: if the caret requirement
+   * of `version` does not match {@link API_VERSION}.
+   */
+  requiresApi(version: ApiVersion): this {
+    if (!isCompatible(version, API_VERSION)) {
+      throw new Error(
+        `the SDK implements the extension API version ${formatVersion(API_VERSION)}, not ${formatVersion(version)}`,
+      );
+    }
+    this.api = { ...version };
+    return this;
   }
 
   /**
@@ -106,7 +131,7 @@ export class Extension {
    * request. Use it to test an extension in the process of the test.
    */
   serve(input: Readable, output: Writable): Promise<void> {
-    const identity = { id: this.id, version: this.version };
+    const identity = { id: this.id, version: this.version, api: this.api };
     return new Connection(input, output, identity, (work, call) => this.answer(work, call)).run();
   }
 

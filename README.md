@@ -29,7 +29,7 @@ The daemon part of an extension is a process, thus an extension can be written i
 | Go | module [`github.com/nomux-sh/extension-api/sdk/go`](sdk/go), Go 1.26 or later | Available | 1.0 ms | 3.7 MB binary | 4.6 MB |
 | Python | | Planned, [issue #5](https://github.com/nomux-sh/extension-api/issues/5) | | | |
 
-The version of each SDK is equal to the extension API version that it implements.
+Each SDK implements the extension API 0.1.1, and an extension asks the host for `^0.1.0` by default. The version of an SDK package is not the extension API version: [Versioning rules](#versioning-rules) tells the difference.
 
 The measurements are for the `echo` extension of each SDK on one Linux computer with 8 cores. "Start to handshake" is the time from the process start to the received `Welcome`: the median of 40 runs of `nomux-conformance --measure-startup 40`, and the middle value of three such rounds. "Program" is the size of the stripped binary (the Rust release build after `strip`, the Go build with `-ldflags="-s -w"`) or of the bundle. "Idle memory" is the resident memory of the process after the initialization, when no call runs.
 
@@ -344,8 +344,9 @@ The [release guide](https://github.com/nomux-sh/.github/blob/main/RELEASING.md) 
 
 ## Versioning rules
 
-- **Extension API version.** The protocol, the SDK and the manifest format have one version. It is equal to the version of the crate `nomux-extension` and is independent of the product version of nomux. A manifest states the versions that the extension can use: `api = "^1.2"`. [spec/extension-protocol.md](spec/extension-protocol.md#version-rule) has the rule.
-- **SDK versions.** The version of each SDK is equal to the extension API version: the crate `nomux-extension` 0.1.2, the package `@nomux-sh/extension` 0.1.2 and the Go module version `v0.1.2` (tag `sdk/go/v0.1.2`) implement the extension API 0.1.2. Change the versions together. A test of each SDK compares its API version constant with its package version. The Go module has no version in a file: its test compares `APIVersion()` with the crate version.
+- **Extension API version.** The protocol and the manifest format have one version: 0.1.1. It changes only when the protocol or the manifest format changes, and it is independent of the product version of nomux and of the SDK versions. `spec/api-version.toml` has the value, and `scripts/check-api-version.sh` compares the constants of the three SDKs with it. A manifest states the versions that the extension can use: `api = "^1.2"`. [spec/extension-protocol.md](spec/extension-protocol.md#version-rule) has the rule and the table of the versions.
+- **What an extension asks for.** By default, an extension asks the host for the lowest version that has each feature that its SDK uses: `^0.1.0`. An extension that uses a later feature states the version with the option of its SDK and with the same minimum in `api`.
+- **SDK versions.** The crate `nomux-extension`, the package `@nomux-sh/extension` and the Go module (tag `sdk/go/vX.Y.Z`) have one release version, for example 0.1.3. Change the versions together. A release of the SDKs changes the extension API version only if it changes the protocol or the manifest format.
 - **Deprecation.** An API that a later major version removes stays for a minimum of two minor versions with a deprecation warning.
 - **Field numbers are permanent.** Do not change the number or the type of a field. Do not use the number of a deleted field again: add a `reserved` statement for the number and the name when you delete a field.
 - **Field number plan.** In the `body` and `result` oneofs of the envelope, each group of messages has its own block of 100 field numbers. The plan is at the top of `proto/nomux/extension/v1/envelope.proto`.

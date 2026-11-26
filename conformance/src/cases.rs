@@ -15,7 +15,8 @@ use nomux_extension::{ApiRequirement, ApiVersion, ErrorCode, Permissions};
 use prost::Message;
 
 use crate::contract::{
-    DENIED_MESSAGE, DENIED_TEXT, ECHO, ECHOED, Echoed, RELAY, REVERSE, STARTED, Text, WAIT,
+    DENIED_MESSAGE, DENIED_TEXT, ECHO, ECHOED, Echoed, RELAY, REQUESTED_API, REVERSE, STARTED,
+    Text, WAIT,
 };
 use crate::process::{Host, Process};
 use crate::test_host::call_result;
@@ -25,13 +26,23 @@ use crate::{Case, Context};
 pub const CASES: &[Case] = &[
     Case {
         name: "handshake",
-        summary: "Welcome has the identifier and the version of the manifest; a newer patch version of the host is accepted; a second Hello fails",
+        summary: "Welcome has the identifier, the version and the extension API version; a newer patch version of the host is accepted; a second Hello fails",
         run: handshake,
     },
     Case {
         name: "version-mismatch",
         summary: "an incompatible host gets ERROR_CODE_VERSION_INCOMPATIBLE and the extension exits with a status that is not 0",
         run: version_mismatch,
+    },
+    Case {
+        name: "earlier-host",
+        summary: "a host of each extension API version from the minimum of the manifest `api` to the current version is accepted; a host before the minimum is refused",
+        run: earlier_host,
+    },
+    Case {
+        name: "requested-api",
+        summary: "an extension that asks for the current extension API version refuses an earlier host with ERROR_CODE_VERSION_INCOMPATIBLE",
+        run: requested_api,
     },
     Case {
         name: "no-hello",
@@ -144,10 +155,15 @@ fn handshake(context: &Context) {
         "Welcome.extension_version is not the version in the manifest"
     );
     let built_for = accepted.api_version.expect("Welcome has no api_version");
+    assert_eq!(
+        built_for,
+        ApiVersion::CURRENT,
+        "Welcome.api_version is not the current extension API version"
+    );
     assert!(
-        ApiRequirement::from(built_for).matches(ApiVersion::CURRENT),
-        "Welcome.api_version is {built_for}, which does not match the host version {}",
-        ApiVersion::CURRENT
+        manifest.api.matches(built_for),
+        "Welcome.api_version is {built_for}, which the manifest `api = \"{}\"` does not match",
+        manifest.api
     );
 
     let again = host.hello(ApiVersion::CURRENT, Permissions::default());
@@ -196,6 +212,66 @@ fn incompatible_versions() -> Vec<ApiVersion> {
         });
     }
     versions
+}
+
+fn earlier_host(context: &Context) {
+    let minimum = context.target.manifest.api.minimum();
+    for host_version in versions_up_to_current(minimum) {
+        let (mut host, _process) = context.start();
+        welcome(&mut host, host_version);
+    }
+    if let Some(earlier) = previous_patch(minimum) {
+        let (mut host, process) = context.start();
+        let refusal = host.hello(earlier, Permissions::default());
+        expect_error(
+            refusal,
+            ErrorCode::VersionIncompatible,
+            &format!(
+                "Hello of the host version {earlier}, before the minimum {minimum} of the manifest,"
+            ),
+        );
+        expect_failure_exit(&process, &format!("the refusal of {earlier}"));
+    }
+}
+
+fn requested_api(context: &Context) {
+    let current = ApiVersion::CURRENT;
+    let environment = [(REQUESTED_API, current.to_string())];
+    let (mut host, _process) = context.start_with(&environment);
+    welcome(&mut host, current);
+
+    let Some(earlier) = previous_patch(current) else {
+        return;
+    };
+    let (mut host, process) = context.start_with(&environment);
+    let refusal = host.hello(earlier, Permissions::default());
+    let request =
+        format!("Hello of the host version {earlier} to an extension that asks for {current}");
+    let error = expect_error(refusal, ErrorCode::VersionIncompatible, &request);
+    let requirement = ApiRequirement::from(current).to_string();
+    assert!(
+        error.message.contains(&requirement) && error.message.contains(&earlier.to_string()),
+        "the refusal of {earlier} does not name {requirement} and {earlier}: {}",
+        error.message
+    );
+    expect_failure_exit(&process, &format!("the refusal of {earlier}"));
+}
+
+/// The versions from `minimum` to the current extension API version that
+/// have the major and the minor version of `minimum`.
+fn versions_up_to_current(minimum: ApiVersion) -> Vec<ApiVersion> {
+    let current = ApiVersion::CURRENT;
+    if (minimum.major, minimum.minor) != (current.major, current.minor) {
+        return vec![current];
+    }
+    (minimum.patch..=current.patch)
+        .map(|patch| ApiVersion { patch, ..current })
+        .collect()
+}
+
+fn previous_patch(version: ApiVersion) -> Option<ApiVersion> {
+    let patch = version.patch.checked_sub(1)?;
+    Some(ApiVersion { patch, ..version })
 }
 
 fn no_hello(context: &Context) {

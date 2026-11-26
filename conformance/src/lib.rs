@@ -60,8 +60,15 @@ struct Context<'a> {
 impl Context<'_> {
     /// Starts a process of the extension. The handshake is not done.
     fn start(&self) -> (Host, Process) {
+        self.start_with(&[])
+    }
+
+    /// Starts a process of the extension with the added environment
+    /// variables. The handshake is not done.
+    fn start_with(&self, environment: &[(&str, String)]) -> (Host, Process) {
         Process::start(
             &self.target.command,
+            environment,
             self.target.show_stderr,
             self.deadline,
             Arc::clone(&self.timed_out),

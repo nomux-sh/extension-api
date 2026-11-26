@@ -268,3 +268,14 @@ func TestServeWaitsForTheRunningHandlerAfterTheStop(t *testing.T) {
 		})
 	}
 }
+
+func TestRequirementOfAVersionThatTheSDKDoesNotImplementPanics(t *testing.T) {
+	later := APIVersion()
+	later.Patch++
+	defer func() {
+		if recover() == nil {
+			t.Error("RequireAPI accepted a version that the SDK does not implement")
+		}
+	}()
+	New("test.go", "1.0.0").RequireAPI(later)
+}

@@ -2,6 +2,7 @@ package extension
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"time"
@@ -47,9 +48,24 @@ type Extension struct {
 // host stops an extension whose id is different from its manifest.
 func New(id, version string) *Extension {
 	return &Extension{
-		identity: identity{id: id, version: version},
+		identity: identity{id: id, version: version, api: MinimumAPIVersion()},
 		handlers: make(map[string]Handler),
 	}
+}
+
+// RequireAPI states the lowest extension API version that the extension
+// needs. The default is [MinimumAPIVersion]. State a later version only if the
+// extension uses a feature of that version, and give api in extension.toml the
+// same minimum: version 0.1.1 and api = "^0.1.1".
+//
+// The extension refuses a host whose version does not match the caret
+// requirement of version. RequireAPI panics if the SDK does not implement
+// version: if the caret requirement of version does not match [APIVersion].
+func (e *Extension) RequireAPI(version Version) {
+	if !version.accepts(APIVersion()) {
+		panic(fmt.Sprintf("extension: the SDK implements the extension API version %s, not %s", APIVersion(), version))
+	}
+	e.identity.api = version
 }
 
 // Handle adds a method that the host can call.

@@ -110,6 +110,8 @@ jobs:
         run: buf build
       - name: Check generated code
         run: scripts/check-generated.sh
+      - name: Check the extension API version of the SDKs
+        run: scripts/check-api-version.sh
 
   # Examines the Go SDK and its example: format, vet, staticcheck and the
   # unit tests. The conformance suite runs in the job `typescript and

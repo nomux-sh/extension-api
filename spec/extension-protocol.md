@@ -94,9 +94,9 @@ The times that the host permits for each step (handshake, initialization, health
 ## Handshake
 
 `Hello` gives the extension API version of the host, the identifier of the extension in its manifest and the permissions that the user approved.
-`Welcome` gives the extension API version that the extension was built for, the identifier that the extension has in its code and the version of the extension.
+`Welcome` gives the extension API version that the SDK of the extension implements, the identifier that the extension has in its code and the version of the extension.
 
-1. The extension applies the [version rule](#version-rule) to the version in `Hello`.
+1. The extension applies the [version rule](#version-rule) to the version in `Hello`: it compares the version with its requirement.
 2. If the host is compatible, the extension sends `Welcome`.
 3. If the host is not compatible, the extension sends an `Error` with the code `ERROR_CODE_VERSION_INCOMPATIBLE` and a clear message. Then the extension exits with a status that is not 0.
 4. If the `extension_id` in `Welcome` is different from the identifier in the manifest, the host stops the extension.
@@ -169,7 +169,7 @@ The values 1 to 5 are equal to the values of `ErrorCode` in the nomux control pr
 
 ## Version rule
 
-The extension API is this protocol, the SDKs and the manifest format. It has one version, and the version obeys [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). The version is independent of the product version of nomux. It is equal to the version of the crate `nomux-extension`, of the npm package `@nomux-sh/extension` and of the Go module `github.com/nomux-sh/extension-api/sdk/go`.
+The extension API is this protocol and the manifest format. It has one version, and the version obeys [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). The version is independent of the product version of nomux and of the versions of the SDK packages. It changes only when the protocol or the manifest format changes. A release of an SDK that does not change them keeps the extension API version. `spec/api-version.toml` has the current version.
 
 An extension states the versions that it can use as a caret requirement:
 
@@ -189,13 +189,48 @@ Before 1.0.0, a new version obeys this rule:
 - An addition that an extension of an earlier version can ignore, for example an optional manifest table or a new message, is a patch version: 0.1.0 to 0.1.1.
 - A breaking change is a minor version: 0.1.1 to 0.2.0.
 - The host accepts an extension whose requirement matches the extension API version of the host by the caret rule. Thus a host of version 0.1.1 accepts an extension with `api = "^0.1"`, and a host of version 0.1.0 refuses an extension with `api = "^0.1.1"`, which can need the addition.
-
-The rule is applied two times:
-
-1. **Manifest.** `api` in `extension.toml` is the requirement of the extension, for example `api = "^1.2"`. The host does not start an extension whose requirement does not match the extension API version of the host.
-2. **Handshake.** The extension was built with one version of the SDK. Its requirement is the caret requirement of that version. The extension compares it with the version in `Hello`.
+- A rule that specifies only what the extension does, and that a host does not need to know, does not change the version. Release 0.1.2 of the SDKs added such rules (the answers to a bad first message, to a bad frame and to a second `Hello`), thus the extension API version stayed 0.1.1.
 
 The type `nomux_extension::ApiRequirement` implements this rule.
+
+### Versions
+
+The table has each extension API version, what it added and the first version of each SDK package that has it.
+
+| API version | Additions | Crate `nomux-extension` | Package `@nomux-sh/extension` | Go module |
+|---|---|---|---|---|
+| 0.1.0 | The protocol: framing, limits, envelope, handshake, life cycle, calls, host services, events, cancellation, health and errors. The manifest tables `[extension]`, `[daemon]`, `[ui]` and `[permissions]`. | 0.1.0 | 0.1.2 | v0.1.1 |
+| 0.1.1 | The manifest table `[adapter]` and the methods `hook` and `hooks.plan` of an adapter. | 0.1.1 | 0.1.2 | v0.1.1 |
+
+The crate 0.1.2, the package 0.1.2 and the Go module v0.1.2 implement the extension API 0.1.1, but they send 0.1.2 in `Welcome` and ask the host for `^0.1.2`. Thus a host of the extension API 0.1.1, for example nomux 0.4.0, refuses an extension that one of them built. From 0.1.3, the SDKs obey the rules of this section.
+
+### Host and extension
+
+Each SDK has two constants:
+
+| Constant | Rust | TypeScript | Go | Value |
+|---|---|---|---|---|
+| The extension API version that the SDK implements | `ApiVersion::CURRENT` | `API_VERSION` | `APIVersion()` | 0.1.1 |
+| The lowest version that has each feature that the SDK uses | `ApiVersion::MINIMUM` | `MINIMUM_API_VERSION` | `MinimumAPIVersion()` | 0.1.0 |
+
+- **Host.** The host sends the version that it implements in `Hello.api_version`. The host of the nomux daemon uses `ApiVersion::CURRENT` of the crate.
+- **Extension.** The extension sends the version that its SDK implements in `Welcome.api_version`. Its requirement is the caret requirement of the lowest version that it needs. By default, this is the minimum of its SDK: `^0.1.0`. Thus a new release of an SDK without a change of the protocol does not refuse an earlier host.
+- **Later feature.** An extension that uses a feature of a later version states that version with the option of its SDK: `Extension::requires_api` (Rust), `Extension.requiresApi` (TypeScript) or `Extension.RequireAPI` (Go). The option fails if the SDK does not implement the version.
+
+### Manifest and code
+
+The rule is applied three times:
+
+1. **Manifest.** `api` in `extension.toml` is the requirement of the extension, for example `api = "^1.2"`. The host does not start an extension whose requirement does not match the extension API version of the host.
+2. **Handshake.** The extension compares the requirement in its code with the version in `Hello`. If the version does not match, the extension refuses the host, as [Handshake](#handshake) specifies.
+3. **Welcome.** The host stops the extension if `api` of the manifest does not match `Welcome.api_version`.
+
+The manifest and the code state one requirement. The minimum version of `api` is equal to the version that the code states, or to the minimum of the SDK if the code states no version. The manifest decides if the host starts the extension, because the host reads only the manifest before the start. If the code states a later version than the manifest, the host starts the extension and the handshake fails. If the code states an earlier version, the extension stays refused on hosts that it can use.
+
+Two checks find a difference:
+
+- The manifest validator refuses an `api` that matches a version before a table of the manifest: a manifest with `[adapter]` needs `^0.1.1` or later.
+- The conformance case `earlier-host` starts the extension with each host version from the minimum of `api` to the current version. Each host gets `Welcome`. The host version before the minimum gets `ERROR_CODE_VERSION_INCOMPATIBLE`.
 
 ### Deprecation
 

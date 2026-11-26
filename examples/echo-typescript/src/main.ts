@@ -2,8 +2,10 @@
 // nomux extension. It is also the conformance extension of the TypeScript
 // SDK: it has the methods that conformance/README.md describes.
 
+import process from "node:process";
+
 import { CallError, Extension } from "@nomux-sh/extension";
-import type { Call } from "@nomux-sh/extension";
+import type { ApiVersion, Call } from "@nomux-sh/extension";
 
 import { Echoed, Empty, Text } from "./messages.js";
 
@@ -35,8 +37,29 @@ function relay(input: Text, call: Call): Promise<Text> {
   return call.host.call("conformance.reverse", { input: Text, output: Text }, input);
 }
 
-await new Extension("nomux.echo-typescript", "0.1.0")
+/**
+ * The extension API version that the conformance suite tells the extension to
+ * ask for, for example `0.1.1`. An extension that uses a feature of a later
+ * version calls `requiresApi` with a constant.
+ */
+function requestedApi(): ApiVersion | undefined {
+  const text = process.env["NOMUX_CONFORMANCE_API"];
+  if (text === undefined) {
+    return undefined;
+  }
+  const [major, minor, patch] = text.split(".").map(Number);
+  if (major === undefined || minor === undefined || patch === undefined || [major, minor, patch].some(Number.isNaN)) {
+    throw new Error(`NOMUX_CONFORMANCE_API is not a version: ${text}`);
+  }
+  return { major, minor, patch };
+}
+
+const extension = new Extension("nomux.echo-typescript", "0.1.0")
   .method("echo", { input: Text, output: Text }, echo)
   .method("wait", { input: Empty, output: Empty }, wait)
-  .method("relay", { input: Text, output: Text }, relay)
-  .run();
+  .method("relay", { input: Text, output: Text }, relay);
+const api = requestedApi();
+if (api !== undefined) {
+  extension.requiresApi(api);
+}
+await extension.run();

@@ -146,3 +146,13 @@ fn result_larger_than_the_limit_fails_only_its_call() {
     assert_eq!(too_large.code, i32::from(ErrorCode::Failed));
     assert_eq!(small, vec![0; 3]);
 }
+
+#[test]
+#[should_panic(expected = "the SDK implements the extension API version")]
+fn requirement_of_a_version_that_the_crate_does_not_implement_panics() {
+    let later = ApiVersion {
+        patch: ApiVersion::CURRENT.patch + 1,
+        ..ApiVersion::CURRENT
+    };
+    let _ = Extension::new("nomux.test", "1.0.0").requires_api(later);
+}

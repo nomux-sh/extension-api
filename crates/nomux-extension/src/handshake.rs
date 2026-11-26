@@ -10,13 +10,14 @@ use crate::wire::v1::envelope::Kind;
 use crate::wire::v1::request::Body;
 use crate::wire::v1::{Error, ErrorCode, Permissions, Request, Response, Welcome, response};
 
-/// Reads `Hello`, applies the version rule and answers. The result is the
-/// permissions that the host gave.
+/// Reads `Hello`, applies the version rule to `requirement` and answers. The
+/// result is the permissions that the host gave.
 pub(crate) fn accept(
     input: &mut impl Read,
     outbound: &Outbound,
     extension_id: &str,
     extension_version: &str,
+    requirement: ApiRequirement,
 ) -> Result<Permissions, RunError> {
     let envelope = frame::read_envelope(input)?.ok_or(RunError::Disconnected)?;
     let Some(Kind::Request(Request {
@@ -28,7 +29,6 @@ pub(crate) fn accept(
     };
 
     let host = hello.api_version.unwrap_or_default();
-    let requirement = ApiRequirement::from(ApiVersion::CURRENT);
     let is_compatible = requirement.matches(host);
     let result = if is_compatible {
         response::Result::Welcome(Welcome {

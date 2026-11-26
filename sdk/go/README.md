@@ -120,7 +120,16 @@ To examine a package before the installation, run `nomux ext validate <directory
 
 ## Version rule
 
-The version of this module is equal to the extension API version that it implements, as for the Rust crate and the TypeScript package. `extension.APIVersion()` returns the value. Thus the module version 0.1.2 implements the extension API 0.1.2, and an extension built with it has the requirement `^0.1.2`. The [version rule](https://github.com/nomux-sh/extension-api/blob/main/spec/extension-protocol.md#version-rule) of the protocol applies.
+The version of this module is not the extension API version. `extension.APIVersion()` returns the extension API version that the module implements: 0.1.1. It changes only when the protocol or the manifest format changes.
+
+An extension asks the host for `^` and the lowest version that it needs. By default, this is `extension.MinimumAPIVersion()`: 0.1.0. Thus an extension built with a new release of the module also runs on an earlier host. If the extension uses a feature of a later version, state the version, and give `api` in `extension.toml` the same minimum:
+
+```go
+ext := extension.New("nomux.agent-tool", "0.1.0")
+ext.RequireAPI(extension.Version{Major: 0, Minor: 1, Patch: 1}) // api = "^0.1.1"
+```
+
+The [version rule](https://github.com/nomux-sh/extension-api/blob/main/spec/extension-protocol.md#version-rule) of the protocol applies.
 
 ## Releases
 

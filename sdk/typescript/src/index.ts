@@ -9,7 +9,7 @@
  * @packageDocumentation
  */
 
-export { API_VERSION, isCompatible } from "./api-version.js";
+export { API_VERSION, MINIMUM_API_VERSION, isCompatible } from "./api-version.js";
 export type { ApiVersion } from "./api-version.js";
 export type { Call } from "./call.js";
 export { bytes } from "./codec.js";

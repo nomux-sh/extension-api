@@ -79,6 +79,8 @@ message Echoed {
 
 The extension has no other methods. Its manifest has `api = "^0.1"` and a `[daemon]` table.
 
+If the environment variable `NOMUX_CONFORMANCE_API` is set, the extension gives its value, for example `0.1.1`, to the option of its SDK that states the extension API version that the extension needs: `Extension::requires_api`, `Extension.requiresApi` or `Extension.RequireAPI`. Without the variable, the extension asks for the default version of its SDK.
+
 The suite is the host of `conformance.reverse`. The service returns the text in reverse. For the text `deny`, it fails with `ERROR_CODE_PERMISSION_DENIED`.
 
 ## Cases
@@ -87,8 +89,10 @@ The suite is the host of `conformance.reverse`. The service returns the text in 
 
 | Case | What the case examines |
 |---|---|
-| `handshake` | `Welcome` has the identifier and the version of the manifest, and an `api_version` that accepts the host version. A host with a newer patch version is accepted. A second `Hello` fails with `ERROR_CODE_FAILED`. |
+| `handshake` | `Welcome` has the identifier and the version of the manifest, and the current extension API version, which `api` of the manifest matches. A host with a newer patch version is accepted. A second `Hello` fails with `ERROR_CODE_FAILED`. |
 | `version-mismatch` | A host with a version that the extension does not accept (the next major version, and the next minor version before 1.0.0) gets `ERROR_CODE_VERSION_INCOMPATIBLE` with a message. Then the extension exits with a status that is not 0. |
+| `earlier-host` | A host of each extension API version from the minimum of `api` in the manifest to the current version gets `Welcome`. Thus an extension that a new SDK built runs on each earlier host whose features it does not use. If the minimum is not a `.0` version, the host of the version before the minimum gets `ERROR_CODE_VERSION_INCOMPATIBLE`: the requirement in the code and the manifest agree. |
+| `requested-api` | With `NOMUX_CONFORMANCE_API` set to the current extension API version, a host of that version gets `Welcome`. A host of the version before it gets `ERROR_CODE_VERSION_INCOMPATIBLE` with a message that names the requirement and the host version. Then the extension exits with a status that is not 0. |
 | `no-hello` | A first message that is not `Hello` makes the extension exit with a status that is not 0. |
 | `initialize` | A call before `InitializeRequest` fails with `ERROR_CODE_FAILED`. `InitializeRequest` succeeds. A second `InitializeRequest` fails with `ERROR_CODE_FAILED`. |
 | `call-result` | A call of `echo` gets its argument back. |
