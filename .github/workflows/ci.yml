@@ -21,10 +21,15 @@ env:
   # The oldest Node.js LTS line that has support. `engines` in
   # sdk/typescript/package.json has the same minimum.
   NODE_VERSION: "22"
+  # The oldest Go release that has support. `go` in sdk/go/go.mod has the
+  # same minimum.
+  GO_VERSION: "1.26"
 
 jobs:
   # Finds the newest version tag for the breaking change check. The output is
-  # empty until the first tag exists, and then the check does not run.
+  # empty until the first tag exists, and then the check does not run. The
+  # pattern starts with refs/tags/: without it, `git ls-remote` also matches
+  # the tags sdk/go/vX.Y.Z of the Go module.
   last-tag:
     name: last tag
     runs-on: ubuntu-latest
@@ -37,7 +42,7 @@ jobs:
         run: |
           set -euo pipefail
           tag="$(git -c versionsort.suffix=- ls-remote --tags --refs --sort=-version:refname \
-            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" 'v[0-9]*.[0-9]*.[0-9]*' |
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" 'refs/tags/v[0-9]*.[0-9]*.[0-9]*' |
             awk -F/ 'NR == 1 { print $3 }')"
           if [ -n "$tag" ]; then
             echo "breaking-against=.git#tag=$tag" >> "$GITHUB_OUTPUT"
@@ -96,13 +101,63 @@ jobs:
           cache: npm
       - name: npm ci
         run: npm ci
+      # The Go plugin of `buf generate` is in the module of the Go SDK.
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: sdk/go/go.sum
       - name: buf build
         run: buf build
       - name: Check generated code
         run: scripts/check-generated.sh
 
-  # Builds and tests the TypeScript SDK and its example, then runs the
-  # conformance suite against the echo extension of each SDK.
+  # Examines the Go SDK and its example: format, vet, staticcheck and the
+  # unit tests. The conformance suite runs in the job `typescript and
+  # conformance`.
+  go:
+    name: go
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      STATICCHECK_VERSION: 0.8.2
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The cache has the module cache and the build cache. Its key comes
+      # from the go.sum files.
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: |
+            sdk/go/go.sum
+            examples/echo-go/go.sum
+      - name: gofmt
+        run: |
+          set -euo pipefail
+          unformatted="$(gofmt -l sdk/go examples/echo-go)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::These files are not formatted. Run gofmt -w."
+            echo "$unformatted"
+            exit 1
+          fi
+      - name: go vet
+        run: |
+          go -C sdk/go vet ./...
+          go -C examples/echo-go vet ./...
+      - name: Install staticcheck
+        run: go install "honnef.co/go/tools/cmd/staticcheck@v${STATICCHECK_VERSION}"
+      - name: staticcheck
+        run: |
+          set -euo pipefail
+          (cd sdk/go && staticcheck ./...)
+          (cd examples/echo-go && staticcheck ./...)
+      - name: Unit tests of the SDK
+        run: go -C sdk/go test -race ./...
+
+  # Builds and tests the TypeScript SDK and its example, builds the Go
+  # example, then runs the conformance suite against the echo extension of
+  # each SDK.
   typescript:
     name: typescript and conformance
     runs-on: ubuntu-latest
@@ -136,6 +191,14 @@ jobs:
             exit 1
           fi
           jq -r '.[0].files[].path' "$RUNNER_TEMP/pack.json"
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: examples/echo-go/go.sum
+      - name: Build the Go echo extension
+        env:
+          CGO_ENABLED: "0"
+        run: go build -C examples/echo-go -trimpath -ldflags="-s -w" -o bin/nomux-echo .
       - name: Build the conformance suite and the Rust echo extension
         run: cargo build --locked -p nomux-conformance -p nomux-echo
       - name: Conformance suite, Rust SDK
@@ -144,6 +207,10 @@ jobs:
         run: >-
           target/debug/nomux-conformance --manifest examples/echo-typescript/extension.toml
           -- examples/echo-typescript/bin/nomux-echo
+      - name: Conformance suite, Go SDK
+        run: >-
+          target/debug/nomux-conformance --manifest examples/echo-go/extension.toml
+          -- examples/echo-go/bin/nomux-echo
 
   # Builds the crate from the packaged files only, as crates.io users do.
   # The job has no `buf` and no `protoc`.

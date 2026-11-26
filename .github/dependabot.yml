@@ -32,3 +32,17 @@ updates:
     groups:
       npm:
         update-types: ["minor", "patch"]
+  # The modules of the Go SDK and its example. Their google.golang.org/protobuf
+  # versions stay equal: the example uses the SDK of this repository.
+  - package-ecosystem: gomod
+    directories:
+      - /sdk/go
+      - /examples/echo-go
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "build"
+    labels: ["dependencies"]
+    groups:
+      gomod:
+        update-types: ["minor", "patch"]
