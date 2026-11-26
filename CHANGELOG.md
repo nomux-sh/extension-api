@@ -8,6 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [git-cliff](https://git-cliff.org) writes this file from the commit subjects.
 To see the changes that are not in a version, run `git cliff --unreleased`.
 
+## [0.1.1] - 2026-11-26
+
+### Added
+
+- Add the adapter table to the manifest
+
+### Documentation
+
+- State the version rule for additions before 1.0.0
 ## [0.1.0] - 2026-11-25
 
 ### Added
