@@ -8,9 +8,6 @@ updates:
     commit-message:
       prefix: "ci"
     labels: ["dependencies", "ci"]
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
   - package-ecosystem: cargo
     directory: /
     schedule:
@@ -19,9 +16,6 @@ updates:
     commit-message:
       prefix: "build"
     labels: ["dependencies"]
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
   # The npm workspace of the TypeScript SDK and its example. One
   # package-lock.json at the root pins all npm dependencies.
   - package-ecosystem: npm
@@ -32,9 +26,6 @@ updates:
     commit-message:
       prefix: "build"
     labels: ["dependencies"]
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
   # The modules of the Go SDK and its example. Their google.golang.org/protobuf
   # versions stay equal: the example uses the SDK of this repository.
   - package-ecosystem: gomod
@@ -47,6 +38,3 @@ updates:
     commit-message:
       prefix: "build"
     labels: ["dependencies"]
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-patch", "version-update:semver-minor"]
