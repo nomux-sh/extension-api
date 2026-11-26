@@ -18,7 +18,7 @@ type Version struct {
 // APIVersion returns the extension API version that this module implements.
 // It is equal to the version of the module.
 func APIVersion() Version {
-	return Version{Major: 0, Minor: 1, Patch: 1}
+	return Version{Major: 0, Minor: 1, Patch: 2}
 }
 
 // String formats the version as major.minor.patch.

@@ -120,11 +120,11 @@ To examine a package before the installation, run `nomux ext validate <directory
 
 ## Version rule
 
-The version of this module is equal to the extension API version that it implements, as for the Rust crate and the TypeScript package. `extension.APIVersion()` returns the value. Thus the module version 0.1.1 implements the extension API 0.1.1, and an extension built with it has the requirement `^0.1.1`. The [version rule](https://github.com/nomux-sh/extension-api/blob/main/spec/extension-protocol.md#version-rule) of the protocol applies.
+The version of this module is equal to the extension API version that it implements, as for the Rust crate and the TypeScript package. `extension.APIVersion()` returns the value. Thus the module version 0.1.2 implements the extension API 0.1.2, and an extension built with it has the requirement `^0.1.2`. The [version rule](https://github.com/nomux-sh/extension-api/blob/main/spec/extension-protocol.md#version-rule) of the protocol applies.
 
 ## Releases
 
-The module is in a subdirectory of the repository. Thus a version of the module is a Git tag with the prefix `sdk/go/`: the tag `sdk/go/v0.1.1` publishes the version `v0.1.1`. The Go module proxy reads the tag from GitHub. No registry and no token are necessary.
+The module is in a subdirectory of the repository. Thus a version of the module is a Git tag with the prefix `sdk/go/`: the tag `sdk/go/v0.1.2` publishes the version `v0.1.2`. The Go module proxy reads the tag from GitHub. No registry and no token are necessary.
 
 ## License
 
