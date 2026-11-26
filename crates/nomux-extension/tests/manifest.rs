@@ -88,6 +88,7 @@ fn manifest_with_only_the_extension_table_asks_for_no_permission() {
 
     assert_eq!(manifest.daemon, None);
     assert_eq!(manifest.ui, None);
+    assert_eq!(manifest.adapter, None);
     assert_eq!(manifest.permissions, Default::default());
     assert!(manifest.api.matches(ApiVersion {
         major: 0,
@@ -284,4 +285,32 @@ fn text_that_is_not_toml_is_a_syntax_error_with_the_line() {
         panic!("the error is not a syntax error: {error:?}");
     };
     assert!(message.contains("line 2"), "{message}");
+}
+
+#[test]
+fn adapter_table_names_the_tools_of_the_adapter() {
+    let adapter = "[adapter]\ntools = [\"testtool\", \"tool-2\"]\n";
+    let manifest: Manifest = format!("{GIT}{adapter}").parse().unwrap();
+
+    let adapter = manifest.adapter.unwrap();
+    assert_eq!(adapter.tools, ["testtool", "tool-2"]);
+}
+
+#[test]
+fn adapter_tools_must_be_names() {
+    let problems = problems_of(&format!(
+        "{GIT}[adapter]\ntools = [\"testtool\", \"Test Tool\", \"{}\"]\nkind = \"hooks\"\n",
+        "a".repeat(65)
+    ));
+
+    assert_eq!(problems.len(), 3, "{problems:?}");
+    assert!(
+        problems[0].starts_with("adapter.tools[1]: "),
+        "{problems:?}"
+    );
+    assert!(
+        problems[1].starts_with("adapter.tools[2]: "),
+        "{problems:?}"
+    );
+    assert!(problems[2].starts_with("adapter.kind: "), "{problems:?}");
 }

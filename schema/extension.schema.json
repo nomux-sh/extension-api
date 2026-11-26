@@ -75,6 +75,22 @@
         }
       }
     },
+    "adapter": {
+      "description": "The agent tools whose hook events the extension takes: the extension is the adapter of these tools.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tools": {
+          "description": "The names of the tools, for example `testtool`. A name starts with a lower-case letter and has only lower-case letters, digits and `-`.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9-]*$"
+          }
+        }
+      }
+    },
     "permissions": {
       "description": "The permissions that the extension asks for. The user approves them at installation.",
       "type": "object",

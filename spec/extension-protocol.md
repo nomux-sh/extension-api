@@ -128,6 +128,10 @@ A `CallRequest` has the name of a method and a payload. A `CallResponse` has the
 
 This version specifies how an extension calls a host service. It does not specify the host services. Each host service gets its messages and its scope when the nomux daemon supplies it.
 
+### Adapters
+
+An extension whose manifest has an `[adapter]` table is the adapter of the agent tools that the table names: `tools = ["testtool"]`. The nomux daemon calls its methods `hook` (one hook event of a tool) and `hooks.plan` (the change that the hooks of the tool need in its settings file). The adapter reports the status of the agent with host services. The messages, the scopes (`hooks:read`, `agent:report`) and the rules are in `spec/adapter.md` of the [`proto`](https://github.com/nomux-sh/proto) repository, because the payloads are messages of the control protocol.
+
 ## Events
 
 An `Event` has a name and a payload. The extension selects the name and the encoding of the payload.
@@ -191,7 +195,7 @@ An API that a later major version removes stays in the extension API for a minim
 
 ## Items that are not specified
 
-- The host services and the list of scope names. Only `sessions:read` is named.
+- The host services and the list of scope names. Only `sessions:read` and the scopes of an adapter are named.
 - Events from the host to the extension, and how an extension selects the events that it gets.
 - The times that the host permits for the handshake, the initialization, a health request and the exit.
 - The environment and the working directory of the process.

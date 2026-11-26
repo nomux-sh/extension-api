@@ -106,6 +106,7 @@ scopes = ["sessions:read"]
 | `daemon.command` | The program of the daemon part: a relative path in the package. |
 | `daemon.lazy` | `true` (default): the daemon part starts when a client needs it. `false`: it starts together with the nomux daemon. |
 | `ui.component`, `ui.slots` | The WASM component of the UI part and the slots that it fills. |
+| `adapter.tools` | The agent tools of which the extension is the adapter: the nomux daemon gives it the hook events of these tools. A tool name is a lower-case letter, then lower-case letters, digits and `-`. |
 | `permissions.fs` | Directories that the extension reads and writes. An item is an absolute path, or it starts with `${worktree}`. |
 | `permissions.process` | Programs that the extension starts. |
 | `permissions.network` | `true` if the extension opens network connections. The default is `false`. |

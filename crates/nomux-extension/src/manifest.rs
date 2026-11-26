@@ -35,6 +35,7 @@
 //! `extension-api` repository. The schema and this module describe the same
 //! rules.
 
+mod adapter;
 mod daemon;
 mod error;
 mod fields;
@@ -45,6 +46,7 @@ mod ui;
 
 use std::str::FromStr;
 
+pub use adapter::AdapterPart;
 pub use daemon::DaemonPart;
 pub use error::{FieldError, ManifestError};
 pub use permissions::PermissionRequest;
@@ -72,6 +74,9 @@ pub struct Manifest {
     pub daemon: Option<DaemonPart>,
     /// The UI part, if the package has one.
     pub ui: Option<UiPart>,
+    /// The agent tools of which the extension is the adapter, if the
+    /// manifest has an `[adapter]` table.
+    pub adapter: Option<AdapterPart>,
     /// The permissions that the extension asks for.
     pub permissions: PermissionRequest,
 }
@@ -97,6 +102,9 @@ impl FromStr for Manifest {
         let ui = root
             .table("ui", &mut problems)
             .and_then(|fields| UiPart::read(fields, &mut problems));
+        let adapter = root
+            .table("adapter", &mut problems)
+            .and_then(|fields| AdapterPart::read(fields, &mut problems));
         let permissions = root
             .table("permissions", &mut problems)
             .map(|fields| PermissionRequest::read(fields, &mut problems))
@@ -114,6 +122,7 @@ impl FromStr for Manifest {
             api: identity.api,
             daemon,
             ui,
+            adapter,
             permissions,
         })
     }
