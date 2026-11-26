@@ -12,7 +12,7 @@ The repository has these parts now:
 
 - The extension protocol for daemon parts: the handshake, the life cycle, calls in the two directions, events, errors and cancellation. [spec/extension-protocol.md](spec/extension-protocol.md) specifies it.
 - The crate [`nomux-extension`](https://crates.io/crates/nomux-extension): the Rust SDK for the daemon part of an extension. Its documentation is on [docs.rs](https://docs.rs/nomux-extension).
-- The package `@nomux/extension`: the TypeScript SDK for the daemon part of an extension. [sdk/typescript](sdk/typescript) has its README.
+- The package `@nomux-sh/extension`: the TypeScript SDK for the daemon part of an extension. [sdk/typescript](sdk/typescript) has its README.
 - The module `github.com/nomux-sh/extension-api/sdk/go`: the Go SDK for the daemon part of an extension. [sdk/go](sdk/go) has its README.
 - The [conformance suite](conformance): one test host that runs the same protocol cases against the `echo` extension of each SDK.
 - The manifest: the JSON Schema of `extension.toml` and a validator in the Rust crate (feature `manifest`).
@@ -25,7 +25,7 @@ The daemon part of an extension is a process, thus an extension can be written i
 | Language | SDK | Status | Start to handshake | Program | Idle memory |
 |---|---|---|---:|---:|---:|
 | Rust | crate [`nomux-extension`](crates/nomux-extension) | Available | 0.4 ms | 0.6 MB binary | 2.5 MB |
-| TypeScript | package [`@nomux/extension`](sdk/typescript), Node.js 22 or later | Available. The package is not on npm yet. | 26 ms | 77 KB bundle and Node.js | 50 MB |
+| TypeScript | package [`@nomux-sh/extension`](sdk/typescript), Node.js 22 or later | Available. The package is not on npm yet. | 26 ms | 77 KB bundle and Node.js | 50 MB |
 | Go | module [`github.com/nomux-sh/extension-api/sdk/go`](sdk/go), Go 1.26 or later | Available | 1.0 ms | 3.7 MB binary | 4.6 MB |
 | Python | | Planned, [issue #5](https://github.com/nomux-sh/extension-api/issues/5) | | | |
 
@@ -93,12 +93,12 @@ The crate has no async runtime. `Extension::run` blocks the thread that calls it
 
 The TypeScript SDK has the same parts. A method is a function that can return a promise, and `call.signal` is an `AbortSignal` that the host cancels. [sdk/typescript/README.md](sdk/typescript/README.md) has the full guide, also for the package.
 
-1. Make an ESM package. Add `@nomux/extension` and `@bufbuild/protobuf` to its dependencies.
+1. Make an ESM package. Add `@nomux-sh/extension` and `@bufbuild/protobuf` to its dependencies.
 2. Write `src/main.ts`. A `Codec` encodes and decodes a payload. [examples/echo-typescript/src/messages.ts](examples/echo-typescript/src/messages.ts) has the codecs of `Text` and `Echoed`:
 
    ```ts
-   import { CallError, Extension } from "@nomux/extension";
-   import type { Call } from "@nomux/extension";
+   import { CallError, Extension } from "@nomux-sh/extension";
+   import type { Call } from "@nomux-sh/extension";
 
    import { Echoed, Text } from "./messages.js";
 
@@ -215,7 +215,7 @@ The error lists all the fields that are not valid, each with its path, for examp
 | `crates/nomux-extension/` | The published crate: the SDK, the generated messages, the framing and the manifest validator. |
 | `crates/nomux-extension/src/generated/` | Output of `buf generate` (committed). |
 | `crates/nomux-extension/tests/` | Tests of the protocol, the wire format and the manifest validator. `test_host/` is the host that the tests use. |
-| `sdk/typescript/` | The TypeScript SDK, package `@nomux/extension`. |
+| `sdk/typescript/` | The TypeScript SDK, package `@nomux-sh/extension`. |
 | `sdk/typescript/src/generated/` | Output of `buf generate` for TypeScript (committed). |
 | `conformance/` | The conformance suite: the program `nomux-conformance` and the contract of the `echo` extensions. |
 | `examples/echo/` | Example extension in Rust and conformance extension of the Rust SDK, its `extension.toml`, and a test that runs the conformance suite against it. |
@@ -305,8 +305,8 @@ cargo package -p nomux-extension --locked
 actionlint
 npm ci
 npm run build --workspaces
-npm test --workspace @nomux/extension
-npm pack --dry-run --workspace @nomux/extension
+npm test --workspace @nomux-sh/extension
+npm pack --dry-run --workspace @nomux-sh/extension
 cargo build -p nomux-conformance -p nomux-echo
 target/debug/nomux-conformance --manifest examples/echo/extension.toml -- target/debug/nomux-echo
 target/debug/nomux-conformance --manifest examples/echo-typescript/extension.toml -- examples/echo-typescript/bin/nomux-echo
@@ -339,13 +339,13 @@ The [release guide](https://github.com/nomux-sh/.github/blob/main/RELEASING.md) 
 - `git-cliff` writes `CHANGELOG.md` from the commit subjects. The configuration is `cliff.toml`.
 - A push of a tag `vX.Y.Z` starts `.github/workflows/release.yml`. The workflow makes sure that the tag is equal to the crate version, that the commit is on `main` and that `CHANGELOG.md` has a section for the version. Then it runs the tests, publishes `nomux-extension` to crates.io and makes the GitHub release from the changelog section.
 - The workflow needs the organization secret `CARGO_REGISTRY_TOKEN`.
-- The same tag publishes `@nomux/extension` to npm. The job runs only when the secret `NPM_TOKEN` exists. Without the secret, the job does nothing and succeeds. The job makes sure that the package version is equal to the tag.
+- The same tag publishes `@nomux-sh/extension` to npm. The job runs only when the secret `NPM_TOKEN` exists. Without the secret, the job does nothing and succeeds. The job makes sure that the package version is equal to the tag.
 - The Go module is in the subdirectory `sdk/go`. Thus its version tag has the prefix of the subdirectory: push a tag `sdk/go/vX.Y.Z` on the same commit as `vX.Y.Z`. The Go module proxy reads the tag from GitHub. No registry and no token are necessary. `release.yml` does not start for this tag: in a tag filter, `*` does not match `/`, thus `v*.*.*` does not match `sdk/go/vX.Y.Z`.
 
 ## Versioning rules
 
 - **Extension API version.** The protocol, the SDK and the manifest format have one version. It is equal to the version of the crate `nomux-extension` and is independent of the product version of nomux. A manifest states the versions that the extension can use: `api = "^1.2"`. [spec/extension-protocol.md](spec/extension-protocol.md#version-rule) has the rule.
-- **SDK versions.** The version of each SDK is equal to the extension API version: the crate `nomux-extension` 0.1.1, the package `@nomux/extension` 0.1.1 and the Go module version `v0.1.1` (tag `sdk/go/v0.1.1`) implement the extension API 0.1.1. Change the versions together. A test of each SDK compares its API version constant with its package version. The Go module has no version in a file: its test compares `APIVersion()` with the crate version.
+- **SDK versions.** The version of each SDK is equal to the extension API version: the crate `nomux-extension` 0.1.1, the package `@nomux-sh/extension` 0.1.1 and the Go module version `v0.1.1` (tag `sdk/go/v0.1.1`) implement the extension API 0.1.1. Change the versions together. A test of each SDK compares its API version constant with its package version. The Go module has no version in a file: its test compares `APIVersion()` with the crate version.
 - **Deprecation.** An API that a later major version removes stays for a minimum of two minor versions with a deprecation warning.
 - **Field numbers are permanent.** Do not change the number or the type of a field. Do not use the number of a deleted field again: add a `reserved` statement for the number and the name when you delete a field.
 - **Field number plan.** In the `body` and `result` oneofs of the envelope, each group of messages has its own block of 100 field numbers. The plan is at the top of `proto/nomux/extension/v1/envelope.proto`.

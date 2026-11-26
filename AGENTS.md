@@ -4,7 +4,7 @@ Rules for coding agents and for people who work in this repository. `CLAUDE.md` 
 
 ## This repository
 
-`nomux-sh/extension-api` is the nomux extension SDK: the protobuf schemas and the specification of the extension protocol for daemon parts, the Rust crate `nomux-extension` that crates.io publishes, the TypeScript package `@nomux/extension`, the Go module `github.com/nomux-sh/extension-api/sdk/go`, the conformance suite of the SDKs, and the JSON Schema of `extension.toml`.
+`nomux-sh/extension-api` is the nomux extension SDK: the protobuf schemas and the specification of the extension protocol for daemon parts, the Rust crate `nomux-extension` that crates.io publishes, the TypeScript package `@nomux-sh/extension`, the Go module `github.com/nomux-sh/extension-api/sdk/go`, the conformance suite of the SDKs, and the JSON Schema of `extension.toml`.
 
 | Path | Responsibility |
 |---|---|
@@ -15,7 +15,7 @@ Rules for coding agents and for people who work in this repository. `CLAUDE.md` 
 | `crates/nomux-extension/src/generated/` | Output of `buf generate`. Committed. Not edited by hand. |
 | `crates/nomux-extension/src/manifest.rs`, `src/manifest/` | Types and validator of `extension.toml` (feature `manifest`). |
 | `crates/nomux-extension/tests/` | Tests of the protocol, the wire format and the manifest validator. `test_host/` is the host of the tests. |
-| `sdk/typescript/` | The TypeScript SDK, package `@nomux/extension`. |
+| `sdk/typescript/` | The TypeScript SDK, package `@nomux-sh/extension`. |
 | `sdk/typescript/src/generated/` | Output of `buf generate` for TypeScript. Committed. Not edited by hand. |
 | `sdk/go/` | The Go SDK, module `github.com/nomux-sh/extension-api/sdk/go`, package `extension`. |
 | `sdk/go/internal/wire/` | Output of `buf generate` for Go. Committed. Not edited by hand. |
@@ -43,7 +43,7 @@ Rules for coding agents and for people who work in this repository. `CLAUDE.md` 
 - The dependencies of the manifest validator stay behind the feature `manifest`. An extension does not build them.
 - `spec/extension-protocol.md`, the schemas and the crate describe one protocol. Change them together.
 - `schema/extension.schema.json` and `crates/nomux-extension/src/manifest/` describe one manifest format. Change them together.
-- `ApiVersion::CURRENT` is equal to the version of the crate, `API_VERSION` of `@nomux/extension` is equal to the version of the package, and `APIVersion()` of the Go SDK is equal to the version of the crate. Tests compare them. The SDKs have the version of the extension API: change them together.
+- `ApiVersion::CURRENT` is equal to the version of the crate, `API_VERSION` of `@nomux-sh/extension` is equal to the version of the package, and `APIVersion()` of the Go SDK is equal to the version of the crate. Tests compare them. The SDKs have the version of the extension API: change them together.
 - The TypeScript SDK has one runtime dependency, `@bufbuild/protobuf`. Import only its `wire` module. Do not add a runtime dependency: an extension starts on the first call, and each module adds to the start time.
 - The Go SDK has one dependency, `google.golang.org/protobuf`. `sdk/go/go.mod` pins its version, and `buf generate` builds `protoc-gen-go` from the same version. `examples/echo-go/go.mod` has the same version. Do not add a dependency or cgo. Do not use `unsafe` in the code of the SDK: only the generated code and the protobuf runtime use it.
 - A Go module version is a tag with the prefix of its directory: `sdk/go/vX.Y.Z`. Do not change the trigger of `release.yml` to a pattern that matches this tag.
@@ -72,8 +72,8 @@ cargo package -p nomux-extension --locked
 actionlint
 npm ci
 npm run build --workspaces
-npm test --workspace @nomux/extension
-npm pack --dry-run --workspace @nomux/extension
+npm test --workspace @nomux-sh/extension
+npm pack --dry-run --workspace @nomux-sh/extension
 cargo build -p nomux-conformance -p nomux-echo
 target/debug/nomux-conformance --manifest examples/echo/extension.toml -- target/debug/nomux-echo
 target/debug/nomux-conformance --manifest examples/echo-typescript/extension.toml -- examples/echo-typescript/bin/nomux-echo

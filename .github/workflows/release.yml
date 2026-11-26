@@ -1,7 +1,7 @@
 name: Release
 
 # A version tag publishes the crate `nomux-extension` to crates.io, publishes
-# the package `@nomux/extension` to npm when the secret `NPM_TOKEN` exists,
+# the package `@nomux-sh/extension` to npm when the secret `NPM_TOKEN` exists,
 # and makes the GitHub release. The steps for a maintainer are in
 # https://github.com/nomux-sh/.github/blob/main/RELEASING.md
 
@@ -137,7 +137,7 @@ jobs:
         if: steps.token.outputs.present == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --workspace @nomux/extension --provenance --access public
+        run: npm publish --workspace @nomux-sh/extension --provenance --access public
 
   github-release:
     name: GitHub release

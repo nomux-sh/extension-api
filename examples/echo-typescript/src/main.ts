@@ -2,8 +2,8 @@
 // nomux extension. It is also the conformance extension of the TypeScript
 // SDK: it has the methods that conformance/README.md describes.
 
-import { CallError, Extension } from "@nomux/extension";
-import type { Call } from "@nomux/extension";
+import { CallError, Extension } from "@nomux-sh/extension";
+import type { Call } from "@nomux-sh/extension";
 
 import { Echoed, Empty, Text } from "./messages.js";
 

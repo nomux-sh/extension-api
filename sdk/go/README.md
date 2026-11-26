@@ -4,7 +4,7 @@ The nomux extension SDK for Go: the daemon part of a [nomux](https://github.com/
 
 The daemon part of an extension is a separate process. The nomux daemon (the host) starts it when a client needs it and stops it when it is idle. The host and the extension exchange protobuf messages on the standard input and the standard output of the process. The [extension protocol](https://github.com/nomux-sh/extension-api/blob/main/spec/extension-protocol.md) specifies the messages.
 
-The module has the same parts as the Rust crate [`nomux-extension`](https://crates.io/crates/nomux-extension) and the TypeScript package `@nomux/extension`: the framing with the size limit, the handshake with the version rule, methods, calls of host services, events, cancellation and the shutdown. The [conformance suite](https://github.com/nomux-sh/extension-api/tree/main/conformance) examines the three SDKs with the same cases.
+The module has the same parts as the Rust crate [`nomux-extension`](https://crates.io/crates/nomux-extension) and the TypeScript package `@nomux-sh/extension`: the framing with the size limit, the handshake with the version rule, methods, calls of host services, events, cancellation and the shutdown. The [conformance suite](https://github.com/nomux-sh/extension-api/tree/main/conformance) examines the three SDKs with the same cases.
 
 Versions earlier than 1.0.0 are pre-releases: interfaces can change between minor versions.
 
