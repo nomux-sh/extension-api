@@ -314,3 +314,17 @@ fn adapter_tools_must_be_names() {
     );
     assert!(problems[2].starts_with("adapter.kind: "), "{problems:?}");
 }
+
+#[test]
+fn adapter_table_needs_the_api_version_that_added_it() {
+    let adapter = "[adapter]\ntools = [\"testtool\"]\n";
+    for api in ["^0.1", "^0.1.0", "^0.0.9", "^0"] {
+        let manifest = GIT.replace("api = \"^1.0\"", &format!("api = \"{api}\""));
+        let problems = problems_of(&format!("{manifest}{adapter}"));
+
+        assert_eq!(problems.len(), 1, "{api}: {problems:?}");
+        assert!(problems[0].starts_with("extension.api: "), "{problems:?}");
+    }
+    let manifest = GIT.replace("api = \"^1.0\"", "api = \"^0.1.1\"");
+    assert!(format!("{manifest}{adapter}").parse::<Manifest>().is_ok());
+}

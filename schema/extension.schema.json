@@ -6,6 +6,23 @@
   "type": "object",
   "required": ["extension"],
   "additionalProperties": false,
+  "if": {
+    "required": ["adapter"]
+  },
+  "then": {
+    "properties": {
+      "extension": {
+        "properties": {
+          "api": {
+            "description": "The `[adapter]` table needs the extension API version 0.1.1: the requirement must be `^0.1.1` or later.",
+            "not": {
+              "pattern": "^\\^0(\\.0(\\.[0-9]+)?|\\.1(\\.0)?)?$"
+            }
+          }
+        }
+      }
+    }
+  },
   "properties": {
     "extension": {
       "description": "The identity of the extension.",

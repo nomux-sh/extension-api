@@ -110,6 +110,9 @@ impl FromStr for Manifest {
             .map(|fields| PermissionRequest::read(fields, &mut problems))
             .unwrap_or_default();
         root.finish(&mut problems);
+        if let (Some(identity), Some(_)) = (&identity, &adapter) {
+            adapter::require_api(identity.api, &mut problems);
+        }
 
         let problems = problems.into_list();
         let (Some(identity), true) = (identity, problems.is_empty()) else {
