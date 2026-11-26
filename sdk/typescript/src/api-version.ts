@@ -9,7 +9,7 @@ export type { ApiVersion };
 export const API_VERSION: Readonly<ApiVersion> = Object.freeze({
   major: 0,
   minor: 1,
-  patch: 1,
+  patch: 2,
 });
 
 /** Formats a version as `major.minor.patch`. */

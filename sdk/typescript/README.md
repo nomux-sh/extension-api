@@ -130,7 +130,7 @@ To examine a package before the installation, run `nomux ext validate <directory
 
 ## Version rule
 
-The version of this package is equal to the extension API version that it implements, as for the Rust crate. `API_VERSION` has the value. Thus `@nomux-sh/extension` 0.1.1 implements the extension API 0.1.1, and an extension built with it has the requirement `^0.1.1`. The [version rule](https://github.com/nomux-sh/extension-api/blob/main/spec/extension-protocol.md#version-rule) of the protocol applies.
+The version of this package is equal to the extension API version that it implements, as for the Rust crate. `API_VERSION` has the value. Thus `@nomux-sh/extension` 0.1.2 implements the extension API 0.1.2, and an extension built with it has the requirement `^0.1.2`. The [version rule](https://github.com/nomux-sh/extension-api/blob/main/spec/extension-protocol.md#version-rule) of the protocol applies.
 
 ## License
 
