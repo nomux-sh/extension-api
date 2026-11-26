@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.17.0",
-    "@nomux-sh/extension": "0.1.2"
+    "@nomux-sh/extension": "0.1.3"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
