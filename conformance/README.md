@@ -8,6 +8,7 @@ Each SDK has one conformance extension: an `echo` extension that supplies the me
 |---|---|
 | Rust, crate `nomux-extension` | [`examples/echo`](../examples/echo) |
 | TypeScript, package `@nomux/extension` | [`examples/echo-typescript`](../examples/echo-typescript) |
+| Go, module `github.com/nomux-sh/extension-api/sdk/go` | [`examples/echo-go`](../examples/echo-go) |
 
 The suite is a Rust program, `nomux-conformance`. Its host is the test host of the crate (`crates/nomux-extension/tests/test_host`), thus the suite and the tests of the crate use the same code.
 
@@ -26,6 +27,13 @@ For the TypeScript extension, build it first (see its [README](../examples/echo-
 npm ci
 npm run build --workspaces
 target/debug/nomux-conformance --manifest examples/echo-typescript/extension.toml -- examples/echo-typescript/bin/nomux-echo
+```
+
+For the Go extension, build its binary first (see its [README](../examples/echo-go/README.md)):
+
+```sh
+CGO_ENABLED=0 go build -C examples/echo-go -trimpath -ldflags="-s -w" -o bin/nomux-echo .
+target/debug/nomux-conformance --manifest examples/echo-go/extension.toml -- examples/echo-go/bin/nomux-echo
 ```
 
 The suite prints one line for each case and exits with the status 1 if a case fails. A failed case gives the reason, for example:
@@ -98,7 +106,7 @@ The suite is the host of `conformance.reverse`. The service returns the text in 
 | `end-of-input` | When the standard input closes before `ShutdownRequest`, the extension exits with a status that is not 0. |
 | `many-calls` | 5 rounds of 1000 calls of `echo` with texts of 4 KiB, 8 calls in flight. Each call gets its own text, and the `echoed` events come in the sequence of the calls. On Linux, the resident memory of the process grows by 8 MiB at most over the last 4000 calls. |
 
-`many-calls` needs the events in the sequence of the calls. The protocol permits a peer to answer requests in a different sequence. The conformance extension has a stricter rule: it starts the calls of the host in the sequence in which they arrive. The Rust and the TypeScript SDK run the methods one at a time, thus they obey the rule.
+`many-calls` needs the events in the sequence of the calls. The protocol permits a peer to answer requests in a different sequence. The conformance extension has a stricter rule: it starts the calls of the host in the sequence in which they arrive. The Rust, the TypeScript and the Go SDK run the methods one at a time, thus they obey the rule.
 
 ## Add an SDK
 
