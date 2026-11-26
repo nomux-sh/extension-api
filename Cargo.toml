@@ -15,7 +15,7 @@ repository = "https://github.com/nomux-sh/extension-api"
 
 [workspace.dependencies]
 # The version is equal to the version of the crate. Change them together.
-nomux-extension = { version = "0.1.2", path = "crates/nomux-extension" }
+nomux-extension = { version = "0.1.3", path = "crates/nomux-extension" }
 nomux-conformance = { version = "0.1.0", path = "conformance" }
 # `prost`, `prost-build` and `prost-types` must have the same version: the
 # generated code in `nomux-extension` is the output of this `prost-build`.

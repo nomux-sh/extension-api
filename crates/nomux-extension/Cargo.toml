@@ -1,6 +1,6 @@
 [package]
 name = "nomux-extension"
-version = "0.1.2"
+version = "0.1.3"
 description = "The nomux extension SDK: the daemon part of an extension and the extension manifest"
 edition.workspace = true
 rust-version = "1.85"
