@@ -1,7 +1,8 @@
 name: Release
 
-# A version tag publishes the crate `nomux-extension` to crates.io and makes the
-# GitHub release. The steps for a maintainer are in
+# A version tag publishes the crate `nomux-extension` to crates.io, publishes
+# the package `@nomux/extension` to npm when the secret `NPM_TOKEN` exists,
+# and makes the GitHub release. The steps for a maintainer are in
 # https://github.com/nomux-sh/.github/blob/main/RELEASING.md
 
 on:
@@ -47,6 +48,16 @@ jobs:
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Check that the npm package version is equal to the crate version
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          npm_version="$(jq -r .version sdk/typescript/package.json)"
+          if [ "$npm_version" != "$VERSION" ]; then
+            echo "::error::The npm package version is $npm_version, but the crate version is $VERSION."
+            exit 1
+          fi
       - name: Check that the commit is on main
         run: |
           set -euo pipefail
@@ -85,6 +96,48 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: cargo publish -p nomux-extension --locked
+
+  # The organization has no npm token yet. Without the secret `NPM_TOKEN`, the
+  # job publishes nothing and succeeds.
+  npm:
+    name: publish to npm
+    needs: check
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # npm provenance.
+      id-token: write
+    steps:
+      - name: Find the npm token
+        id: token
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -n "$NPM_TOKEN" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::The secret NPM_TOKEN does not exist. The npm package is not published."
+          fi
+      - if: steps.token.outputs.present == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - if: steps.token.outputs.present == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+      - name: npm ci
+        if: steps.token.outputs.present == 'true'
+        run: npm ci
+      - name: npm publish
+        if: steps.token.outputs.present == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --workspace @nomux/extension --provenance --access public
 
   github-release:
     name: GitHub release

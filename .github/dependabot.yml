@@ -20,3 +20,15 @@ updates:
     groups:
       cargo:
         update-types: ["minor", "patch"]
+  # The npm workspace of the TypeScript SDK and its example. One
+  # package-lock.json at the root pins all npm dependencies.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "build"
+    labels: ["dependencies"]
+    groups:
+      npm:
+        update-types: ["minor", "patch"]
