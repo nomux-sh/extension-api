@@ -1,6 +1,6 @@
 # extension-api
 
-The nomux extension SDK: the protocol between the nomux daemon and the daemon part of an extension, the Rust crate `nomux-extension`, and the format of `extension.toml`.
+The nomux extension SDK: the protocol between the nomux daemon and the daemon part of an extension, the SDKs for Rust and TypeScript, the conformance suite of the SDKs, and the format of `extension.toml`.
 
 This repository is a part of [nomux](https://github.com/nomux-sh), a native and lightweight agentic development environment. Sessions stay alive on the host when the client disconnects.
 
@@ -12,8 +12,23 @@ The repository has these parts now:
 
 - The extension protocol for daemon parts: the handshake, the life cycle, calls in the two directions, events, errors and cancellation. [spec/extension-protocol.md](spec/extension-protocol.md) specifies it.
 - The crate [`nomux-extension`](https://crates.io/crates/nomux-extension): the Rust SDK for the daemon part of an extension. Its documentation is on [docs.rs](https://docs.rs/nomux-extension).
-- The manifest: the JSON Schema of `extension.toml` and a validator in the crate (feature `manifest`).
-- One example extension: [examples/echo](examples/echo).
+- The package `@nomux/extension`: the TypeScript SDK for the daemon part of an extension. [sdk/typescript](sdk/typescript) has its README.
+- The [conformance suite](conformance): one test host that runs the same protocol cases against the `echo` extension of each SDK.
+- The manifest: the JSON Schema of `extension.toml` and a validator in the Rust crate (feature `manifest`).
+- Two example extensions: [examples/echo](examples/echo) in Rust and [examples/echo-typescript](examples/echo-typescript) in TypeScript.
+
+### Languages
+
+The daemon part of an extension is a process, thus an extension can be written in each language that can read and write bytes. An SDK gives the framing, the handshake, the methods, the calls of host services, the events, the cancellation and the shutdown. An SDK is correct when its `echo` extension passes the conformance suite.
+
+| Language | SDK | Status |
+|---|---|---|
+| Rust | crate [`nomux-extension`](crates/nomux-extension) | Available |
+| TypeScript | package [`@nomux/extension`](sdk/typescript), Node.js 22 or later | Available. The package is not on npm yet. |
+| Python | | Planned, [issue #5](https://github.com/nomux-sh/extension-api/issues/5) |
+| Go | | Planned, [issue #5](https://github.com/nomux-sh/extension-api/issues/5) |
+
+The version of each SDK is equal to the extension API version that it implements.
 
 These parts are not in the repository yet:
 
@@ -70,6 +85,38 @@ The daemon part of an extension is a program. The nomux daemon starts it when a 
 The standard output of the program carries the protocol. Write logs to the standard error.
 
 The crate has no async runtime. `Extension::run` blocks the thread that calls it and runs the methods on that thread, one at a time. A second thread reads the messages from the host, thus the extension answers health requests and records cancellations while a method runs. An extension is a small program that starts fast, and a method does not need a lock for the state of the extension.
+
+## Write an extension in TypeScript
+
+The TypeScript SDK has the same parts. A method is a function that can return a promise, and `call.signal` is an `AbortSignal` that the host cancels. [sdk/typescript/README.md](sdk/typescript/README.md) has the full guide, also for the package.
+
+1. Make an ESM package. Add `@nomux/extension` and `@bufbuild/protobuf` to its dependencies.
+2. Write `src/main.ts`. A `Codec` encodes and decodes a payload. [examples/echo-typescript/src/messages.ts](examples/echo-typescript/src/messages.ts) has the codecs of `Text` and `Echoed`:
+
+   ```ts
+   import { CallError, Extension } from "@nomux/extension";
+   import type { Call } from "@nomux/extension";
+
+   import { Echoed, Text } from "./messages.js";
+
+   function echo(input: Text, call: Call): Text {
+     if (input.text === "") {
+       throw CallError.failed("the text is empty");
+     }
+     const length = BigInt(new TextEncoder().encode(input.text).length);
+     call.host.emit("echoed", Echoed, { length });
+     return input;
+   }
+
+   await new Extension("nomux.echo-typescript", "0.1.0")
+     .method("echo", { input: Text, output: Text }, echo)
+     .run();
+   ```
+
+3. Bundle it into one file: `esbuild src/main.ts --bundle --platform=node --format=esm --outfile=dist/main.js`. One file starts faster, and the package needs no `node_modules`.
+4. Write the launcher `bin/nomux-echo`, which runs `exec node "$(dirname "$0")/../dist/main.js"`, and an `extension.toml` with `command = "bin/nomux-echo"`.
+
+The user must have Node.js 22 or later. The methods run one at a time, in the sequence in which the calls arrive. While a method waits for a promise, the extension answers health requests and records cancellations.
 
 ## Manifest
 
@@ -130,7 +177,12 @@ The error lists all the fields that are not valid, each with its path, for examp
 | `crates/nomux-extension/` | The published crate: the SDK, the generated messages, the framing and the manifest validator. |
 | `crates/nomux-extension/src/generated/` | Output of `buf generate` (committed). |
 | `crates/nomux-extension/tests/` | Tests of the protocol, the wire format and the manifest validator. `test_host/` is the host that the tests use. |
-| `examples/echo/` | Example extension with one method and one event, its `extension.toml`, and a test that runs it as a child process. |
+| `sdk/typescript/` | The TypeScript SDK, package `@nomux/extension`. |
+| `sdk/typescript/src/generated/` | Output of `buf generate` for TypeScript (committed). |
+| `conformance/` | The conformance suite: the program `nomux-conformance` and the contract of the `echo` extensions. |
+| `examples/echo/` | Example extension in Rust and conformance extension of the Rust SDK, its `extension.toml`, and a test that runs the conformance suite against it. |
+| `examples/echo-typescript/` | Example extension in TypeScript and conformance extension of the TypeScript SDK, with its `extension.toml` and launcher. |
+| `package.json`, `package-lock.json` | The npm workspace of the TypeScript SDK and its example. |
 | `tools/protoc-gen-nomux-prost/` | Local `buf` plugin that runs `prost-build`. Not published. |
 | `scripts/check-generated.sh` | Fails if the generated code is stale. |
 | `scripts/release-notes.sh` | Prints the release notes of one version. |
@@ -145,6 +197,8 @@ The error lists all the fields that are not valid, each with its path, for examp
 |------|---------|----------|
 | Rust | 1.100.0 (pinned in `rust-toolchain.toml`) | build, test |
 | [buf](https://github.com/bufbuild/buf/releases) | 1.75.0 | lint, format, breaking change check, code generation |
+| [Node.js](https://nodejs.org) | 22 or later (CI uses 22) | TypeScript SDK: build, test, code generation |
+| npm | the version of Node.js | TypeScript SDK: dependencies (`package-lock.json` pins them) |
 | [cargo-nextest](https://nexte.st) | 0.9.152 | tests |
 | [cargo-deny](https://github.com/EmbarkStudios/cargo-deny) | 0.22.1 | license and advisory check |
 | [cargo-machete](https://github.com/bnjbvr/cargo-machete) | 0.10.1 | unused dependency check |
@@ -157,25 +211,34 @@ To build the crate `nomux-extension` or an extension that depends on it, only Ru
 
 ## Code generation
 
-The generated Rust code is committed in `crates/nomux-extension/src/generated/`. The crate has no `build.rs`.
+The generated code is committed: the Rust code in `crates/nomux-extension/src/generated/` and the TypeScript code in `sdk/typescript/src/generated/`. The crate has no `build.rs`.
 
-`buf generate` starts a plugin that is a binary in this workspace (`tools/protoc-gen-nomux-prost`), and the plugin calls `prost-build` with the descriptors from `buf`. `Cargo.lock` pins `prost-build` and the `prost` runtime to the same version, and no remote plugin or schema registry is used.
+`buf generate` starts two local plugins. No remote plugin or schema registry is used.
+
+- `tools/protoc-gen-nomux-prost` is a binary in this workspace. It calls `prost-build` with the descriptors from `buf`. `Cargo.lock` pins `prost-build` and the `prost` runtime to the same version.
+- `protoc-gen-ts_proto` comes from the npm package [`ts-proto`](https://github.com/stephenh/ts-proto). `package-lock.json` pins its version. The generated code imports only the `wire` module of `@bufbuild/protobuf`. Thus an extension does not load a reflection runtime at its start: on the same computer, the code of `protoc-gen-es` added 90 ms to the start of Node.js, and the code of `ts-proto` added 8 ms.
 
 After you change a `.proto` file, do these steps:
 
-1. Format the schemas:
+1. Install the npm dependencies one time, for the TypeScript plugin:
+
+   ```sh
+   npm ci
+   ```
+
+2. Format the schemas:
 
    ```sh
    buf format -w
    ```
 
-2. Generate the code:
+3. Generate the code:
 
    ```sh
    buf generate
    ```
 
-3. Commit the schemas and the generated code in the same commit.
+4. Commit the schemas and the generated code in the same commit.
 
 CI runs `scripts/check-generated.sh`. The check fails if the committed code is not the output of `buf generate`.
 
@@ -196,6 +259,13 @@ cargo deny check
 cargo machete
 cargo package -p nomux-extension --locked
 actionlint
+npm ci
+npm run build --workspaces
+npm test --workspace @nomux/extension
+npm pack --dry-run --workspace @nomux/extension
+cargo build -p nomux-conformance -p nomux-echo
+target/debug/nomux-conformance --manifest examples/echo/extension.toml -- target/debug/nomux-echo
+target/debug/nomux-conformance --manifest examples/echo-typescript/extension.toml -- examples/echo-typescript/bin/nomux-echo
 ```
 
 CI runs the same checks with the reusable workflows of the [`nomux-sh/.github`](https://github.com/nomux-sh/.github) repository. `cargo package` builds the crate from the packaged files only. Thus the check fails if the package needs a file that it does not have.
@@ -216,10 +286,12 @@ The [release guide](https://github.com/nomux-sh/.github/blob/main/RELEASING.md) 
 - `git-cliff` writes `CHANGELOG.md` from the commit subjects. The configuration is `cliff.toml`.
 - A push of a tag `vX.Y.Z` starts `.github/workflows/release.yml`. The workflow makes sure that the tag is equal to the crate version, that the commit is on `main` and that `CHANGELOG.md` has a section for the version. Then it runs the tests, publishes `nomux-extension` to crates.io and makes the GitHub release from the changelog section.
 - The workflow needs the organization secret `CARGO_REGISTRY_TOKEN`.
+- The same tag publishes `@nomux/extension` to npm. The job runs only when the secret `NPM_TOKEN` exists. Without the secret, the job does nothing and succeeds. The job makes sure that the package version is equal to the tag.
 
 ## Versioning rules
 
 - **Extension API version.** The protocol, the SDK and the manifest format have one version. It is equal to the version of the crate `nomux-extension` and is independent of the product version of nomux. A manifest states the versions that the extension can use: `api = "^1.2"`. [spec/extension-protocol.md](spec/extension-protocol.md#version-rule) has the rule.
+- **SDK versions.** The version of each SDK is equal to the extension API version: the crate `nomux-extension` 0.1.1 and the package `@nomux/extension` 0.1.1 implement the extension API 0.1.1. Change the versions together. A test of each SDK compares its API version constant with its package version.
 - **Deprecation.** An API that a later major version removes stays for a minimum of two minor versions with a deprecation warning.
 - **Field numbers are permanent.** Do not change the number or the type of a field. Do not use the number of a deleted field again: add a `reserved` statement for the number and the name when you delete a field.
 - **Field number plan.** In the `body` and `result` oneofs of the envelope, each group of messages has its own block of 100 field numbers. The plan is at the top of `proto/nomux/extension/v1/envelope.proto`.
