@@ -38,7 +38,8 @@ conventional_commits = true
 # A commit that is not a conventional commit is not in the changelog.
 # The commitlint job in CI rejects such a commit before the merge.
 filter_unconventional = true
-tag_pattern = "v[0-9].*"
+# The tags `sdk/go/vX.Y.Z` of the Go module are not versions of the changelog.
+tag_pattern = "^v[0-9]"
 sort_commits = "oldest"
 # The first parser that matches a commit sets its group. The HTML comments set
 # the sequence of the groups. The template removes them.
