@@ -7,7 +7,7 @@ Each SDK has one conformance extension: an `echo` extension that supplies the me
 | SDK | Conformance extension |
 |---|---|
 | Rust, crate `nomux-extension` | [`examples/echo`](../examples/echo) |
-| TypeScript, package `@nomux/extension` | [`examples/echo-typescript`](../examples/echo-typescript) |
+| TypeScript, package `@nomux-sh/extension` | [`examples/echo-typescript`](../examples/echo-typescript) |
 | Go, module `github.com/nomux-sh/extension-api/sdk/go` | [`examples/echo-go`](../examples/echo-go) |
 
 The suite is a Rust program, `nomux-conformance`. Its host is the test host of the crate (`crates/nomux-extension/tests/test_host`), thus the suite and the tests of the crate use the same code.

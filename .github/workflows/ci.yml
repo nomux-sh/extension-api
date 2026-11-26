@@ -178,11 +178,11 @@ jobs:
       - name: Build the SDK and the example
         run: npm run build --workspaces
       - name: Unit tests of the SDK
-        run: npm test --workspace @nomux/extension
+        run: npm test --workspace @nomux-sh/extension
       - name: Check the files of the npm package
         run: |
           set -euo pipefail
-          npm pack --dry-run --json --workspace @nomux/extension > "$RUNNER_TEMP/pack.json"
+          npm pack --dry-run --json --workspace @nomux-sh/extension > "$RUNNER_TEMP/pack.json"
           unexpected="$(jq -r '.[0].files[].path' "$RUNNER_TEMP/pack.json" |
             grep -Ev '^(dist/.+\.(js|d\.ts)|README\.md|LICENSE-APACHE|LICENSE-MIT|package\.json)$' || true)"
           if [ -n "$unexpected" ]; then

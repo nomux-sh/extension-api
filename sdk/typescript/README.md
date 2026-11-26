@@ -1,4 +1,4 @@
-# @nomux/extension
+# @nomux-sh/extension
 
 The nomux extension SDK for TypeScript: the daemon part of a [nomux](https://github.com/nomux-sh) extension.
 
@@ -17,15 +17,15 @@ Versions earlier than 1.0.0 are pre-releases: interfaces can change between mino
 ## Write an extension
 
 ```sh
-npm install @nomux/extension @bufbuild/protobuf
+npm install @nomux-sh/extension @bufbuild/protobuf
 ```
 
 `src/main.ts`:
 
 ```ts
 import { BinaryReader, BinaryWriter, WireType } from "@bufbuild/protobuf/wire";
-import { CallError, Extension } from "@nomux/extension";
-import type { Call, Codec } from "@nomux/extension";
+import { CallError, Extension } from "@nomux-sh/extension";
+import type { Call, Codec } from "@nomux-sh/extension";
 
 interface Text {
   text: string;
@@ -130,7 +130,7 @@ To examine a package before the installation, run `nomux ext validate <directory
 
 ## Version rule
 
-The version of this package is equal to the extension API version that it implements, as for the Rust crate. `API_VERSION` has the value. Thus `@nomux/extension` 0.1.1 implements the extension API 0.1.1, and an extension built with it has the requirement `^0.1.1`. The [version rule](https://github.com/nomux-sh/extension-api/blob/main/spec/extension-protocol.md#version-rule) of the protocol applies.
+The version of this package is equal to the extension API version that it implements, as for the Rust crate. `API_VERSION` has the value. Thus `@nomux-sh/extension` 0.1.1 implements the extension API 0.1.1, and an extension built with it has the requirement `^0.1.1`. The [version rule](https://github.com/nomux-sh/extension-api/blob/main/spec/extension-protocol.md#version-rule) of the protocol applies.
 
 ## License
 

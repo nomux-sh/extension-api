@@ -1,5 +1,5 @@
 # Code generation for the Rust crate `nomux-extension`, the TypeScript
-# package `@nomux/extension` and the Go module
+# package `@nomux-sh/extension` and the Go module
 # `github.com/nomux-sh/extension-api/sdk/go`.
 #
 # The three plugins run locally. No plugin is downloaded and no remote plugin

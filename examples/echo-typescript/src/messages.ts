@@ -2,7 +2,7 @@
 // numbers are the same as in the Rust example and in conformance/README.md.
 
 import { BinaryReader, BinaryWriter, WireType } from "@bufbuild/protobuf/wire";
-import type { Codec } from "@nomux/extension";
+import type { Codec } from "@nomux-sh/extension";
 
 /** The argument and the result of `echo` and `relay`. */
 export interface Text {

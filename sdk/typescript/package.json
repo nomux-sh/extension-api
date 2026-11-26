@@ -1,5 +1,5 @@
 {
-  "name": "@nomux/extension",
+  "name": "@nomux-sh/extension",
   "version": "0.1.1",
   "description": "The nomux extension SDK for TypeScript: the daemon part of an extension",
   "keywords": [

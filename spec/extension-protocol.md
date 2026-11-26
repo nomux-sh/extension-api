@@ -169,7 +169,7 @@ The values 1 to 5 are equal to the values of `ErrorCode` in the nomux control pr
 
 ## Version rule
 
-The extension API is this protocol, the SDKs and the manifest format. It has one version, and the version obeys [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). The version is independent of the product version of nomux. It is equal to the version of the crate `nomux-extension`, of the npm package `@nomux/extension` and of the Go module `github.com/nomux-sh/extension-api/sdk/go`.
+The extension API is this protocol, the SDKs and the manifest format. It has one version, and the version obeys [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). The version is independent of the product version of nomux. It is equal to the version of the crate `nomux-extension`, of the npm package `@nomux-sh/extension` and of the Go module `github.com/nomux-sh/extension-api/sdk/go`.
 
 An extension states the versions that it can use as a caret requirement:
 

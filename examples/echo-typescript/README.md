@@ -1,6 +1,6 @@
 # echo-typescript
 
-The echo extension in TypeScript. It is the conformance extension of the TypeScript SDK [`@nomux/extension`](../../sdk/typescript): it has the methods of the [conformance contract](../../conformance/README.md#contract), with the same behaviour as the Rust example [`examples/echo`](../echo).
+The echo extension in TypeScript. It is the conformance extension of the TypeScript SDK [`@nomux-sh/extension`](../../sdk/typescript): it has the methods of the [conformance contract](../../conformance/README.md#contract), with the same behaviour as the Rust example [`examples/echo`](../echo).
 
 | File | Content |
 |---|---|
