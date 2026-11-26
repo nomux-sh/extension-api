@@ -13,6 +13,7 @@ nomux-extension.workspace = true
 prost.workspace = true
 
 [dev-dependencies]
+nomux-conformance.workspace = true
 nomux-extension = { workspace = true, features = ["manifest"] }
 
 [lints]
