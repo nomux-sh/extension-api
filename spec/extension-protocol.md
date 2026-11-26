@@ -28,6 +28,7 @@ Each message is one `Envelope`.
 This is the length-delimited encoding of protobuf, the same as on the nomux control channel.
 
 A peer that reads the end of the stream before the first byte of a length sees a closed stream. A peer that reads the end of the stream at a different position sees an error.
+A peer that reads a frame whose bytes are not an encoded `Envelope` sees an error. It stops, as for a limit.
 
 ## Limits
 
@@ -40,7 +41,7 @@ A peer that reads the end of the stream before the first byte of a length sees a
 The constant `nomux_extension::frame::MAX_ENVELOPE_LENGTH` has the value of the first limit.
 A sender does not write an `Envelope` that is larger than the limit. If the result of a call is too large, the sender answers the call with an `Error` that has the code `ERROR_CODE_FAILED`.
 
-When the host stops because of a limit, it ends the process of the extension. When the extension stops, it exits.
+When the host stops because of a limit, it ends the process of the extension. When the extension stops, it exits with a status that is not 0.
 
 ## Envelope
 
@@ -76,8 +77,8 @@ Each group of messages has its own block of 100 field numbers in `Request.body` 
 | Step | Messages | Rule |
 |---|---|---|
 | Start | None | The host starts the process when a client needs the extension. If `lazy` is `false` in the manifest, the host starts the process together with the daemon. |
-| Handshake | `Hello`, `Welcome` | The first message on the connection is a `Request` with `Hello` from the host. The extension sends nothing before it. |
-| Initialization | `InitializeRequest`, `InitializeResponse` | The host sends the request one time, after `Welcome` and before the first call. If the result is an `Error`, the host stops the extension. |
+| Handshake | `Hello`, `Welcome` | The first message on the connection is a `Request` with `Hello` from the host. The extension sends nothing before it. If the first message is not a `Request` with `Hello`, the extension sends no response and exits with a status that is not 0. The extension answers a subsequent `Hello` with an `Error` that has the code `ERROR_CODE_FAILED`. |
+| Initialization | `InitializeRequest`, `InitializeResponse` | The host sends the request one time, after `Welcome` and before the first call. If the result is an `Error`, the host stops the extension. The extension answers a second `InitializeRequest` with an `Error` that has the code `ERROR_CODE_FAILED`. |
 | Work | `CallRequest`, `CallResponse`, `Event`, `Cancel`, `HealthRequest`, `HealthResponse` | The two peers send calls. The extension sends events. |
 | Stop | `ShutdownRequest`, `ShutdownResponse` | The host sends the request when the extension is idle or when the daemon stops. The extension sends the response and exits with the status 0. |
 
@@ -167,7 +168,7 @@ The values 1 to 5 are equal to the values of `ErrorCode` in the nomux control pr
 
 ## Version rule
 
-The extension API is this protocol, the Rust SDK and the manifest format. It has one version, and the version obeys [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). The version is independent of the product version of nomux. It is equal to the version of the crate `nomux-extension`.
+The extension API is this protocol, the SDKs and the manifest format. It has one version, and the version obeys [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). The version is independent of the product version of nomux. It is equal to the version of the crate `nomux-extension` and of the npm package `@nomux/extension`.
 
 An extension states the versions that it can use as a caret requirement:
 
