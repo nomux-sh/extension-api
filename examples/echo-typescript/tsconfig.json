@@ -1,0 +1,9 @@
+{
+  "extends": "../../sdk/typescript/tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src"]
+}

@@ -1,0 +1,55 @@
+{
+  "name": "@nomux/extension",
+  "version": "0.1.1",
+  "description": "The nomux extension SDK for TypeScript: the daemon part of an extension",
+  "keywords": [
+    "nomux",
+    "extension",
+    "sdk",
+    "protobuf",
+    "plugin"
+  ],
+  "license": "MIT OR Apache-2.0",
+  "author": "The nomux Authors",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nomux-sh/extension-api.git",
+    "directory": "sdk/typescript"
+  },
+  "homepage": "https://github.com/nomux-sh/extension-api/tree/main/sdk/typescript#readme",
+  "bugs": "https://github.com/nomux-sh/extension-api/issues",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE-APACHE",
+    "LICENSE-MIT"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepack": "npm run build",
+    "test": "tsc -p tsconfig.test.json && node --test --test-timeout=10000 '.test-build/test/*.test.js'"
+  },
+  "dependencies": {
+    "@bufbuild/protobuf": "^2.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "ts-proto": "2.18.5",
+    "typescript": "7.0.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,8 +1,16 @@
-# Code generation for the `nomux-extension` crate.
+# Code generation for the Rust crate `nomux-extension` and the TypeScript
+# package `@nomux/extension`.
 #
-# The plugin is a binary in this workspace (tools/protoc-gen-nomux-prost).
-# Cargo.lock pins its `prost-build` version together with the `prost` runtime
-# version of `nomux-extension`. No plugin is downloaded and no remote plugin runs.
+# The two plugins run locally. No plugin is downloaded and no remote plugin
+# runs:
+#
+# - protoc-gen-nomux-prost is a binary in this workspace
+#   (tools/protoc-gen-nomux-prost). Cargo.lock pins its `prost-build` version
+#   together with the `prost` runtime version of `nomux-extension`.
+# - protoc-gen-ts_proto comes from the npm package `ts-proto`.
+#   package-lock.json pins its version. Run `npm ci` before `buf generate`.
+#   The generated code imports only `@bufbuild/protobuf/wire`, thus an
+#   extension does not load a reflection runtime at its start.
 #
 # Run `buf generate` from the repository root.
 version: v2
@@ -18,3 +26,18 @@ plugins:
       - --package
       - protoc-gen-nomux-prost
     out: crates/nomux-extension/src/generated
+  - local: node_modules/.bin/protoc-gen-ts_proto
+    out: sdk/typescript/src/generated
+    opt:
+      - env=browser
+      - esModuleInterop=true
+      - forceLong=bigint
+      - importSuffix=.js
+      - oneof=unions-value
+      - outputJsonMethods=false
+      - outputPartialMethods=false
+      - outputServices=none
+      - outputTypeRegistry=false
+      - exportCommonSymbols=false
+      - removeEnumPrefix=true
+      - useDate=false
