@@ -43,8 +43,15 @@ impl<FromExtension: Read, ToExtension: Write> TestHost<FromExtension, ToExtensio
         }
     }
 
+    /// The stream to the extension, for bytes that are not a valid frame.
+    pub fn output(&mut self) -> &mut ToExtension {
+        &mut self.output
+    }
+
     pub fn send(&mut self, kind: Kind) {
-        frame::write_envelope(&mut self.output, &Envelope { kind: Some(kind) }).unwrap();
+        frame::write_envelope(&mut self.output, &Envelope { kind: Some(kind) }).unwrap_or_else(
+            |error| panic!("the message to the extension was not written: {error}"),
+        );
     }
 
     /// Sends a request and does not wait for the response.
@@ -80,6 +87,11 @@ impl<FromExtension: Read, ToExtension: Write> TestHost<FromExtension, ToExtensio
         }
     }
 
+    /// The number of events that were read and not taken yet.
+    pub fn pending_events(&self) -> usize {
+        self.events.len()
+    }
+
     pub fn hello(&mut self, api_version: ApiVersion, permissions: Permissions) -> response::Result {
         self.request(Body::Hello(Hello {
             api_version: Some(api_version),
@@ -111,7 +123,8 @@ impl<FromExtension: Read, ToExtension: Write> TestHost<FromExtension, ToExtensio
 
     pub fn wait_call<Reply: Message + Default>(&mut self, id: u64) -> Result<Reply, Error> {
         match self.wait_response(id) {
-            response::Result::Call(reply) => Ok(Reply::decode(reply.payload.as_slice()).unwrap()),
+            response::Result::Call(reply) => Ok(Reply::decode(reply.payload.as_slice())
+                .unwrap_or_else(|error| panic!("the result of the call is not valid: {error}"))),
             response::Result::Error(error) => Err(error),
             other => panic!("the response is not a call result: {other:?}"),
         }
@@ -129,7 +142,7 @@ impl<FromExtension: Read, ToExtension: Write> TestHost<FromExtension, ToExtensio
     /// Reads one message from the extension and files it.
     fn read(&mut self) {
         let envelope = frame::read_envelope(&mut self.input)
-            .unwrap()
+            .unwrap_or_else(|error| panic!("the extension sent a frame that is not valid: {error}"))
             .expect("the extension closed its output");
         match envelope.kind {
             Some(Kind::Response(Response {

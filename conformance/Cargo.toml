@@ -1,0 +1,16 @@
+[package]
+name = "nomux-conformance"
+version = "0.1.0"
+description = "The conformance suite of the nomux extension protocol: runs protocol cases against an extension program"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+nomux-extension = { workspace = true, features = ["manifest"] }
+prost.workspace = true
+
+[lints]
+workspace = true
