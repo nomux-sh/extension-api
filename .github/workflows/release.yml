@@ -1,8 +1,7 @@
 name: Release
 
-# A version tag publishes the crate `nomux-extension` to crates.io, publishes
-# the package `@nomux-sh/extension` to npm when the secret `NPM_TOKEN` exists,
-# and makes the GitHub release. The steps for a maintainer are in
+# A version tag publishes the package `@nomux-sh/extension` to npm, then the
+# crate `nomux-extension` to crates.io, and makes the GitHub release. The steps for a maintainer are in
 # https://github.com/nomux-sh/.github/blob/main/RELEASING.md
 
 on:
@@ -77,10 +76,80 @@ jobs:
         run: cargo nextest run --workspace --locked
       - name: cargo test --doc
         run: cargo test --workspace --doc --locked
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+      - name: npm ci
+        run: npm ci
+      # Provenance needs a `repository` URL that is equal to this repository.
+      - name: Check the repository URL of the npm package
+        run: |
+          set -euo pipefail
+          url="$(jq -r .repository.url sdk/typescript/package.json)"
+          if [ "$url" != "git+https://github.com/$GITHUB_REPOSITORY.git" ]; then
+            echo "::error::The repository URL of the npm package is $url."
+            exit 1
+          fi
+      - name: Check the npm token
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::error::The secret NPM_TOKEN does not exist."
+            exit 1
+          fi
+          npm whoami
+      - name: npm publish --dry-run
+        run: npm publish --dry-run --workspace @nomux-sh/extension --access public
+
+  # The npm job runs before the crate job: when the npm publish fails, no
+  # package of the version is public, and a second run can publish the version.
+  npm:
+    name: publish to npm
+    needs: check
+    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      # npm provenance.
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          registry-url: https://registry.npmjs.org
+      # A second run of the workflow does not publish the version again.
+      - name: Find the version on npm
+        id: registry
+        env:
+          VERSION: ${{ needs.check.outputs.version }}
+        run: |
+          set -euo pipefail
+          if npm view "@nomux-sh/extension@$VERSION" version > /dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::@nomux-sh/extension@$VERSION is on npm. The job does not publish it again."
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: npm ci
+        if: steps.registry.outputs.published == 'false'
+        run: npm ci
+      # The script `prepack` of the package builds `dist` before the publish.
+      - name: npm publish
+        if: steps.registry.outputs.published == 'false'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --workspace @nomux-sh/extension --provenance --access public
 
   publish:
     name: publish to crates.io
-    needs: check
+    needs: [check, npm]
     # Only a version tag starts this workflow, and the `check` job fails when
     # the commit is not on `main`. This condition is a second guard.
     if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
@@ -96,48 +165,6 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: cargo publish -p nomux-extension --locked
-
-  # The organization has no npm token yet. Without the secret `NPM_TOKEN`, the
-  # job publishes nothing and succeeds.
-  npm:
-    name: publish to npm
-    needs: check
-    if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: read
-      # npm provenance.
-      id-token: write
-    steps:
-      - name: Find the npm token
-        id: token
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: |
-          if [ -n "$NPM_TOKEN" ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::The secret NPM_TOKEN does not exist. The npm package is not published."
-          fi
-      - if: steps.token.outputs.present == 'true'
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - if: steps.token.outputs.present == 'true'
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
-        with:
-          node-version: "22"
-          registry-url: https://registry.npmjs.org
-      - name: npm ci
-        if: steps.token.outputs.present == 'true'
-        run: npm ci
-      - name: npm publish
-        if: steps.token.outputs.present == 'true'
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --workspace @nomux-sh/extension --provenance --access public
 
   github-release:
     name: GitHub release
