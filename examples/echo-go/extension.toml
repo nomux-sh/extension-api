@@ -1,0 +1,11 @@
+#:schema ../../schema/extension.schema.json
+
+[extension]
+id = "nomux.echo-go"
+name = "Echo (Go)"
+version = "0.1.0"
+api = "^0.1"
+
+[daemon]
+command = "bin/nomux-echo"
+lazy = true

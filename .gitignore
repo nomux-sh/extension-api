@@ -6,3 +6,4 @@ node_modules/
 /sdk/typescript/dist/
 /sdk/typescript/.test-build/
 /examples/echo-typescript/dist/
+/examples/echo-go/bin/
