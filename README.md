@@ -25,7 +25,7 @@ The daemon part of an extension is a process, thus an extension can be written i
 | Language | SDK | Status | Start to handshake | Program | Idle memory |
 |---|---|---|---:|---:|---:|
 | Rust | crate [`nomux-extension`](crates/nomux-extension) | Available | 0.4 ms | 0.6 MB binary | 2.5 MB |
-| TypeScript | package [`@nomux-sh/extension`](sdk/typescript), Node.js 22 or later | Available. The package is not on npm yet. | 26 ms | 77 KB bundle and Node.js | 50 MB |
+| TypeScript | package [`@nomux-sh/extension`](sdk/typescript), Node.js 22 or later | Available | 26 ms | 77 KB bundle and Node.js | 50 MB |
 | Go | module [`github.com/nomux-sh/extension-api/sdk/go`](sdk/go), Go 1.26 or later | Available | 1.0 ms | 3.7 MB binary | 4.6 MB |
 | Python | | Planned, [issue #5](https://github.com/nomux-sh/extension-api/issues/5) | | | |
 
