@@ -18,6 +18,9 @@ concurrency:
 env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: "0"
+  # The oldest Node.js LTS line that has support. `engines` in
+  # sdk/typescript/package.json has the same minimum.
+  NODE_VERSION: "22"
 
 jobs:
   # Finds the newest version tag for the breaking change check. The output is
@@ -86,10 +89,61 @@ jobs:
       - name: Install the toolchain from rust-toolchain.toml
         run: rustup toolchain install
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      # The TypeScript plugin of `buf generate` is in the npm dependencies.
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: npm ci
+        run: npm ci
       - name: buf build
         run: buf build
       - name: Check generated code
         run: scripts/check-generated.sh
+
+  # Builds and tests the TypeScript SDK and its example, then runs the
+  # conformance suite against the echo extension of each SDK.
+  typescript:
+    name: typescript and conformance
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install the toolchain from rust-toolchain.toml
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: npm ci
+        run: npm ci
+      - name: Build the SDK and the example
+        run: npm run build --workspaces
+      - name: Unit tests of the SDK
+        run: npm test --workspace @nomux/extension
+      - name: Check the files of the npm package
+        run: |
+          set -euo pipefail
+          npm pack --dry-run --json --workspace @nomux/extension > "$RUNNER_TEMP/pack.json"
+          unexpected="$(jq -r '.[0].files[].path' "$RUNNER_TEMP/pack.json" |
+            grep -Ev '^(dist/.+\.(js|d\.ts)|README\.md|LICENSE-APACHE|LICENSE-MIT|package\.json)$' || true)"
+          if [ -n "$unexpected" ]; then
+            echo "::error::The npm package has files that it must not have:"
+            echo "$unexpected"
+            exit 1
+          fi
+          jq -r '.[0].files[].path' "$RUNNER_TEMP/pack.json"
+      - name: Build the conformance suite and the Rust echo extension
+        run: cargo build --locked -p nomux-conformance -p nomux-echo
+      - name: Conformance suite, Rust SDK
+        run: target/debug/nomux-conformance --manifest examples/echo/extension.toml -- target/debug/nomux-echo
+      - name: Conformance suite, TypeScript SDK
+        run: >-
+          target/debug/nomux-conformance --manifest examples/echo-typescript/extension.toml
+          -- examples/echo-typescript/bin/nomux-echo
 
   # Builds the crate from the packaged files only, as crates.io users do.
   # The job has no `buf` and no `protoc`.
