@@ -337,9 +337,9 @@ The `last-tag` job of `.github/workflows/ci.yml` finds the newest tag with the f
 The [release guide](https://github.com/nomux-sh/.github/blob/main/RELEASING.md) of the organization gives the steps. In this repository:
 
 - `git-cliff` writes `CHANGELOG.md` from the commit subjects. The configuration is `cliff.toml`.
-- A push of a tag `vX.Y.Z` starts `.github/workflows/release.yml`. The workflow makes sure that the tag is equal to the crate version, that the commit is on `main` and that `CHANGELOG.md` has a section for the version. Then it runs the tests, publishes `nomux-extension` to crates.io and makes the GitHub release from the changelog section.
-- The workflow needs the organization secret `CARGO_REGISTRY_TOKEN`.
-- The same tag publishes `@nomux-sh/extension` to npm. The job runs only when the secret `NPM_TOKEN` exists. Without the secret, the job does nothing and succeeds. The job makes sure that the package version is equal to the tag.
+- A push of a tag `vX.Y.Z` starts `.github/workflows/release.yml`. The workflow makes sure that the tag is equal to the crate version and to the npm package version, that the commit is on `main` and that `CHANGELOG.md` has a section for the version. Then it runs the tests, checks the npm token with `npm whoami` and runs `npm publish --dry-run`.
+- After the checks, the workflow publishes `@nomux-sh/extension` to npm with provenance, then `nomux-extension` to crates.io, then makes the GitHub release from the changelog section. If the npm publish fails, the crate is not published: correct the cause and run the workflow again. If the version is already on npm, the npm job does not publish it again. If a package of the version is public and a later step cannot complete, publish a new patch version.
+- The workflow needs the organization secrets `CARGO_REGISTRY_TOKEN` and `NPM_TOKEN`. `NPM_TOKEN` is a granular access token with write access to the scope `@nomux-sh` and with "Bypass 2FA" set.
 - The Go module is in the subdirectory `sdk/go`. Thus its version tag has the prefix of the subdirectory: push a tag `sdk/go/vX.Y.Z` on the same commit as `vX.Y.Z`. The Go module proxy reads the tag from GitHub. No registry and no token are necessary. `release.yml` does not start for this tag: in a tag filter, `*` does not match `/`, thus `v*.*.*` does not match `sdk/go/vX.Y.Z`.
 
 ## Versioning rules
