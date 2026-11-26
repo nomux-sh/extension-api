@@ -2,14 +2,14 @@
 # Fails if the generated code in the repository is stale.
 #
 # The script runs `buf generate` and then compares the result with the
-# committed files: the Rust code and the TypeScript code. Run `npm ci` first,
-# for the TypeScript plugin. Run the script from any directory in the
-# repository.
+# committed files: the Rust code, the TypeScript code and the Go code. Run
+# `npm ci` first, for the TypeScript plugin. The Go plugin needs Go. Run the
+# script from any directory in the repository.
 set -euo pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
-generated_dirs=("crates/nomux-extension/src/generated" "sdk/typescript/src/generated")
+generated_dirs=("crates/nomux-extension/src/generated" "sdk/typescript/src/generated" "sdk/go/internal/wire")
 
 buf generate
 

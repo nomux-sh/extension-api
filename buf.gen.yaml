@@ -1,7 +1,8 @@
-# Code generation for the Rust crate `nomux-extension` and the TypeScript
-# package `@nomux/extension`.
+# Code generation for the Rust crate `nomux-extension`, the TypeScript
+# package `@nomux/extension` and the Go module
+# `github.com/nomux-sh/extension-api/sdk/go`.
 #
-# The two plugins run locally. No plugin is downloaded and no remote plugin
+# The three plugins run locally. No plugin is downloaded and no remote plugin
 # runs:
 #
 # - protoc-gen-nomux-prost is a binary in this workspace
@@ -11,6 +12,10 @@
 #   package-lock.json pins its version. Run `npm ci` before `buf generate`.
 #   The generated code imports only `@bufbuild/protobuf/wire`, thus an
 #   extension does not load a reflection runtime at its start.
+# - protoc-gen-go comes from the module `google.golang.org/protobuf`.
+#   `go run -C sdk/go` builds it with the version in sdk/go/go.mod, which is
+#   also the version of the runtime of the Go SDK. The generated package is
+#   internal: the public API of the Go SDK has its own types.
 #
 # Run `buf generate` from the repository root.
 version: v2
@@ -41,3 +46,16 @@ plugins:
       - exportCommonSymbols=false
       - removeEnumPrefix=true
       - useDate=false
+  - local:
+      - go
+      - run
+      - -C
+      - sdk/go
+      - google.golang.org/protobuf/cmd/protoc-gen-go
+    out: sdk/go/internal/wire
+    opt:
+      - module=github.com/nomux-sh/extension-api/sdk/go/internal/wire
+      - Mnomux/extension/v1/call.proto=github.com/nomux-sh/extension-api/sdk/go/internal/wire;wire
+      - Mnomux/extension/v1/envelope.proto=github.com/nomux-sh/extension-api/sdk/go/internal/wire;wire
+      - Mnomux/extension/v1/handshake.proto=github.com/nomux-sh/extension-api/sdk/go/internal/wire;wire
+      - Mnomux/extension/v1/lifecycle.proto=github.com/nomux-sh/extension-api/sdk/go/internal/wire;wire
