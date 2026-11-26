@@ -4,7 +4,7 @@ Rules for coding agents and for people who work in this repository. `CLAUDE.md` 
 
 ## This repository
 
-`nomux-sh/extension-api` is the nomux extension SDK: the protobuf schemas and the specification of the extension protocol for daemon parts, the Rust crate `nomux-extension` that crates.io publishes, the TypeScript package `@nomux/extension`, the conformance suite of the SDKs, and the JSON Schema of `extension.toml`.
+`nomux-sh/extension-api` is the nomux extension SDK: the protobuf schemas and the specification of the extension protocol for daemon parts, the Rust crate `nomux-extension` that crates.io publishes, the TypeScript package `@nomux/extension`, the Go module `github.com/nomux-sh/extension-api/sdk/go`, the conformance suite of the SDKs, and the JSON Schema of `extension.toml`.
 
 | Path | Responsibility |
 |---|---|
@@ -17,9 +17,12 @@ Rules for coding agents and for people who work in this repository. `CLAUDE.md` 
 | `crates/nomux-extension/tests/` | Tests of the protocol, the wire format and the manifest validator. `test_host/` is the host of the tests. |
 | `sdk/typescript/` | The TypeScript SDK, package `@nomux/extension`. |
 | `sdk/typescript/src/generated/` | Output of `buf generate` for TypeScript. Committed. Not edited by hand. |
+| `sdk/go/` | The Go SDK, module `github.com/nomux-sh/extension-api/sdk/go`, package `extension`. |
+| `sdk/go/internal/wire/` | Output of `buf generate` for Go. Committed. Not edited by hand. |
 | `conformance/` | The conformance suite: the program `nomux-conformance` and the contract of the `echo` extensions (`conformance/README.md`). Not published. |
 | `examples/echo/` | Example extension and conformance extension of the Rust SDK, its `extension.toml` and the test that runs the conformance suite against it. |
 | `examples/echo-typescript/` | Example extension and conformance extension of the TypeScript SDK, its `extension.toml` and its launcher. |
+| `examples/echo-go/` | Example extension and conformance extension of the Go SDK, and its `extension.toml`. Its `go.mod` replaces the SDK with `sdk/go`. |
 | `package.json`, `package-lock.json` | The npm workspace of the TypeScript SDK and its example. |
 | `tools/protoc-gen-nomux-prost/` | The `buf` plugin that writes the generated Rust code. Not published. |
 | `scripts/check-generated.sh` | Fails when the generated code is stale. |
@@ -33,17 +36,19 @@ Rules for coding agents and for people who work in this repository. `CLAUDE.md` 
 - A field number and an enum value are permanent. Do not change the number or the type of a field. When you delete a field, add a `reserved` statement for its number and its name.
 - A change that fails `buf breaking` needs a new package (`nomux.extension.v2`). Do not change the rule set to make the check pass.
 - When you change a `.proto` file, run `npm ci` one time, then `buf format -w` and `buf generate`. Commit the schema and the generated code in the same commit.
-- Do not edit a file in `crates/nomux-extension/src/generated/` or in `sdk/typescript/src/generated/`.
+- Do not edit a file in `crates/nomux-extension/src/generated/`, in `sdk/typescript/src/generated/` or in `sdk/go/internal/wire/`.
 - The crate `nomux-extension` builds with Rust only. Do not add a `build.rs`, and do not add a step that needs `buf` or `protoc` to a build of the crate.
 - `prost`, `prost-build` and `prost-types` have the same version in `Cargo.toml`. Change them together and generate the code again.
 - The crate has no async runtime. An extension must be small and start fast. Do not add a dependency to the default features without a measured reason.
 - The dependencies of the manifest validator stay behind the feature `manifest`. An extension does not build them.
 - `spec/extension-protocol.md`, the schemas and the crate describe one protocol. Change them together.
 - `schema/extension.schema.json` and `crates/nomux-extension/src/manifest/` describe one manifest format. Change them together.
-- `ApiVersion::CURRENT` is equal to the version of the crate, and `API_VERSION` of `@nomux/extension` is equal to the version of the package. Tests compare them. The two SDKs have the version of the extension API: change them together.
+- `ApiVersion::CURRENT` is equal to the version of the crate, `API_VERSION` of `@nomux/extension` is equal to the version of the package, and `APIVersion()` of the Go SDK is equal to the version of the crate. Tests compare them. The SDKs have the version of the extension API: change them together.
 - The TypeScript SDK has one runtime dependency, `@bufbuild/protobuf`. Import only its `wire` module. Do not add a runtime dependency: an extension starts on the first call, and each module adds to the start time.
-- A change of the protocol behaviour changes the two SDKs and the conformance suite together. Each SDK passes each case of the suite.
-- The example in `README.md`, the example in `crates/nomux-extension/README.md` and `examples/echo/` show one API. Change them together. The TypeScript example in `README.md`, `sdk/typescript/README.md` and `examples/echo-typescript/` show one API. Change them together.
+- The Go SDK has one dependency, `google.golang.org/protobuf`. `sdk/go/go.mod` pins its version, and `buf generate` builds `protoc-gen-go` from the same version. `examples/echo-go/go.mod` has the same version. Do not add a dependency or cgo. Do not use `unsafe` in the code of the SDK: only the generated code and the protobuf runtime use it.
+- A Go module version is a tag with the prefix of its directory: `sdk/go/vX.Y.Z`. Do not change the trigger of `release.yml` to a pattern that matches this tag.
+- A change of the protocol behaviour changes each SDK and the conformance suite together. Each SDK passes each case of the suite.
+- The example in `README.md`, the example in `crates/nomux-extension/README.md` and `examples/echo/` show one API. Change them together. The TypeScript example in `README.md`, `sdk/typescript/README.md` and `examples/echo-typescript/` show one API. Change them together. The Go example in `README.md`, `sdk/go/README.md` and `examples/echo-go/` show one API. Change them together.
 - The UI part of an extension (WASM component, WIT package `nomux:ui`) is not in this repository yet. Do not add a placeholder for it.
 - Pin each action in a workflow to a full commit SHA with a version comment.
 - Do not publish the crate or the npm package from a computer. The release workflow publishes them from a version tag. The steps are in the [release guide](https://github.com/nomux-sh/.github/blob/main/RELEASING.md).
@@ -72,6 +77,13 @@ npm pack --dry-run --workspace @nomux/extension
 cargo build -p nomux-conformance -p nomux-echo
 target/debug/nomux-conformance --manifest examples/echo/extension.toml -- target/debug/nomux-echo
 target/debug/nomux-conformance --manifest examples/echo-typescript/extension.toml -- examples/echo-typescript/bin/nomux-echo
+gofmt -l sdk/go examples/echo-go
+go -C sdk/go vet ./...
+go -C examples/echo-go vet ./...
+(cd sdk/go && staticcheck ./...) && (cd examples/echo-go && staticcheck ./...)
+go -C sdk/go test -race ./...
+CGO_ENABLED=0 go build -C examples/echo-go -trimpath -ldflags="-s -w" -o bin/nomux-echo .
+target/debug/nomux-conformance --manifest examples/echo-go/extension.toml -- examples/echo-go/bin/nomux-echo
 ```
 
 If you changed `AGENTS.md`, also run this command with a clone of the [`.github`](https://github.com/nomux-sh/.github) repository next to this repository:

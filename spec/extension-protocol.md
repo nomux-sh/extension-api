@@ -87,6 +87,7 @@ Each group of messages has its own block of 100 field numbers in `Request.body` 
 - If the standard input of the extension closes before a `ShutdownRequest`, the extension exits with a status that is not 0.
 - If the process of the extension ends, the host fails each request that has no response. The daemon and the Sessions continue to run. The host can start the extension again for the subsequent call.
 - The host ends the process if the extension does not exit after `ShutdownResponse`.
+- The extension can leave a request that arrives after `ShutdownRequest` without a response. The host fails it when the process ends, as above.
 
 The times that the host permits for each step (handshake, initialization, health, exit) are not specified yet. They are values of the host, not of this protocol.
 
@@ -168,7 +169,7 @@ The values 1 to 5 are equal to the values of `ErrorCode` in the nomux control pr
 
 ## Version rule
 
-The extension API is this protocol, the SDKs and the manifest format. It has one version, and the version obeys [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). The version is independent of the product version of nomux. It is equal to the version of the crate `nomux-extension` and of the npm package `@nomux/extension`.
+The extension API is this protocol, the SDKs and the manifest format. It has one version, and the version obeys [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html). The version is independent of the product version of nomux. It is equal to the version of the crate `nomux-extension`, of the npm package `@nomux/extension` and of the Go module `github.com/nomux-sh/extension-api/sdk/go`.
 
 An extension states the versions that it can use as a caret requirement:
 
