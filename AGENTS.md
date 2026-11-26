@@ -28,6 +28,7 @@ Rules for coding agents and for people who work in this repository. `CLAUDE.md` 
 | `tools/protoc-gen-nomux-prost/` | The `buf` plugin that writes the generated Rust code. Not published. |
 | `scripts/check-generated.sh` | Fails when the generated code is stale. |
 | `scripts/check-api-version.sh` | Fails when a constant of an SDK is not equal to `spec/api-version.toml`. |
+| `scripts/check-released-host.sh` | Installs the three echo examples in a released nomux and calls them. |
 | `buf.yaml`, `buf.gen.yaml` | `buf` module, lint rules, breaking change rules, code generation. |
 | `Cargo.toml`, `deny.toml`, `rust-toolchain.toml` | Workspace members and shared versions, license and source policy, pinned toolchain. |
 | `cliff.toml`, `CHANGELOG.md` | Changelog configuration and the changelog. |
@@ -89,7 +90,10 @@ go -C examples/echo-go vet ./...
 go -C sdk/go test -race ./...
 CGO_ENABLED=0 go build -C examples/echo-go -trimpath -ldflags="-s -w" -o bin/nomux-echo .
 target/debug/nomux-conformance --manifest examples/echo-go/extension.toml -- examples/echo-go/bin/nomux-echo
+scripts/check-released-host.sh
 ```
+
+`scripts/check-released-host.sh` needs the newest released `nomux` on the `PATH`. CI installs the version of `NOMUX_VERSION` in `.github/workflows/ci.yml`.
 
 If you changed `AGENTS.md`, also run this command with a clone of the [`.github`](https://github.com/nomux-sh/.github) repository next to this repository:
 

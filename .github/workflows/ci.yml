@@ -214,6 +214,54 @@ jobs:
           target/debug/nomux-conformance --manifest examples/echo-go/extension.toml
           -- examples/echo-go/bin/nomux-echo
 
+  # Installs the three echo examples in the newest released nomux and calls
+  # them. An SDK whose extensions the released host refuses fails here, before
+  # a release tag.
+  released-host:
+    name: released host
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # The newest released nomux. Change the version and the checksum
+      # together when nomux makes a release.
+      NOMUX_VERSION: 0.4.0
+      NOMUX_SHA256: 5fbd9c4bca24e5da0903e6a143b3e3b912bac05675bd453ce53f08ddf6619bdd
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install nomux
+        run: |
+          set -euo pipefail
+          archive="nomux-${NOMUX_VERSION}-x86_64-unknown-linux-musl.tar.gz"
+          curl --fail --silent --show-error --location --output "$RUNNER_TEMP/$archive" \
+            "https://github.com/nomux-sh/nomux/releases/download/v${NOMUX_VERSION}/$archive"
+          echo "$NOMUX_SHA256  $RUNNER_TEMP/$archive" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/${archive%.tar.gz}" >> "$GITHUB_PATH"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install the toolchain from rust-toolchain.toml
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache-dependency-path: examples/echo-go/go.sum
+      - name: Build the echo extensions
+        env:
+          CGO_ENABLED: "0"
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build --workspaces
+          go build -C examples/echo-go -trimpath -ldflags="-s -w" -o bin/nomux-echo .
+          cargo build --locked -p nomux-echo
+      - name: Install and call the echo extensions
+        run: scripts/check-released-host.sh
+
   # Builds the crate from the packaged files only, as crates.io users do.
   # The job has no `buf` and no `protoc`.
   package:
