@@ -1,0 +1,10 @@
+{
+  "name": "nomux-extension-api",
+  "private": true,
+  "description": "The npm workspace of the TypeScript SDK and its example. Not published.",
+  "license": "MIT OR Apache-2.0",
+  "workspaces": [
+    "sdk/typescript",
+    "examples/echo-typescript"
+  ]
+}
