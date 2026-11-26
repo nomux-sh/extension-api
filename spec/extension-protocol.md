@@ -182,6 +182,12 @@ An extension states the versions that it can use as a caret requirement:
 
 The first part of the requirement that is not 0 sets the limit. Versions earlier than 1.0.0 are pre-releases: a minor version can have breaking changes.
 
+Before 1.0.0, a new version obeys this rule:
+
+- An addition that an extension of an earlier version can ignore, for example an optional manifest table or a new message, is a patch version: 0.1.0 to 0.1.1.
+- A breaking change is a minor version: 0.1.1 to 0.2.0.
+- The host accepts an extension whose requirement matches the extension API version of the host by the caret rule. Thus a host of version 0.1.1 accepts an extension with `api = "^0.1"`, and a host of version 0.1.0 refuses an extension with `api = "^0.1.1"`, which can need the addition.
+
 The rule is applied two times:
 
 1. **Manifest.** `api` in `extension.toml` is the requirement of the extension, for example `api = "^1.2"`. The host does not start an extension whose requirement does not match the extension API version of the host.
