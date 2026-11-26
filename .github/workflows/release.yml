@@ -57,6 +57,10 @@ jobs:
             echo "::error::The npm package version is $npm_version, but the crate version is $VERSION."
             exit 1
           fi
+      # The extension API version is not the package version. It changes
+      # only with the protocol, thus the check compares it with its source.
+      - name: Check the extension API version of the SDKs
+        run: scripts/check-api-version.sh
       - name: Check that the commit is on main
         run: |
           set -euo pipefail

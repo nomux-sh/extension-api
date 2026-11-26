@@ -1,0 +1,12 @@
+# The extension API versions of the SDKs. This file is the source of the
+# constants: `scripts/check-api-version.sh` compares the constants of the
+# three SDKs and the table of spec/extension-protocol.md with it.
+
+# The extension API version that the SDKs implement. Change it only when the
+# protocol or the manifest format changes, and add a row to the table
+# "Versions" of spec/extension-protocol.md.
+current = "0.1.1"
+
+# The lowest extension API version that has each feature that the SDKs use.
+# An extension asks the host for this version by default.
+minimum = "0.1.0"

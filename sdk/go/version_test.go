@@ -1,24 +1,6 @@
 package extension
 
-import (
-	"os"
-	"regexp"
-	"testing"
-)
-
-func TestAPIVersionIsTheCrateVersion(t *testing.T) {
-	manifest, err := os.ReadFile("../../crates/nomux-extension/Cargo.toml")
-	if err != nil {
-		t.Fatalf("the manifest of the crate was not read: %v", err)
-	}
-	match := regexp.MustCompile(`(?m)^version = "([^"]+)"$`).FindSubmatch(manifest)
-	if match == nil {
-		t.Fatal("the manifest of the crate has no version")
-	}
-	if got, want := APIVersion().String(), string(match[1]); got != want {
-		t.Errorf("APIVersion() is %s, but the crate version is %s: change the SDKs together", got, want)
-	}
-}
+import "testing"
 
 func TestCaretRule(t *testing.T) {
 	tests := []struct {

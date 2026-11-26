@@ -35,6 +35,7 @@ fn handshake_time(target: &Target) -> Duration {
     let deadline = started + CASE_TIME_LIMIT;
     let (mut host, _process) = Process::start(
         &target.command,
+        &[],
         target.show_stderr,
         deadline,
         Arc::new(AtomicBool::new(false)),

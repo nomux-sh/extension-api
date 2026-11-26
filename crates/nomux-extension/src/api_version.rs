@@ -1,6 +1,8 @@
 //! The extension API version and the version rule.
 //!
-//! The rule is specified in `spec/extension-protocol.md`.
+//! The rule and the history of the versions are specified in
+//! `spec/extension-protocol.md`. `spec/api-version.toml` is the source of the
+//! two constants.
 
 use std::fmt;
 use std::str::FromStr;
@@ -8,12 +10,24 @@ use std::str::FromStr;
 pub use crate::wire::v1::ApiVersion;
 
 impl ApiVersion {
-    /// The extension API version that this crate implements. It is equal to
-    /// the version of the crate.
+    /// The extension API version that this crate implements. A host sends
+    /// it in `Hello`, and an extension sends it in `Welcome`.
+    ///
+    /// It changes only when the protocol or the manifest format changes. It
+    /// is not the version of the crate.
     pub const CURRENT: Self = Self {
         major: 0,
         minor: 1,
-        patch: 2,
+        patch: 1,
+    };
+
+    /// The lowest extension API version that has each feature that the SDK
+    /// uses. An extension asks the host for this version, unless it states a
+    /// later version with [`Extension::requires_api`](crate::Extension::requires_api).
+    pub const MINIMUM: Self = Self {
+        major: 0,
+        minor: 1,
+        patch: 0,
     };
 }
 
@@ -47,10 +61,20 @@ pub struct ApiRequirement {
 }
 
 impl ApiRequirement {
+    /// The lowest version that matches, for example 1.2.0 for `^1.2`.
+    pub fn minimum(&self) -> ApiVersion {
+        ApiVersion {
+            major: self.major,
+            minor: self.minor.unwrap_or(0),
+            patch: self.patch.unwrap_or(0),
+        }
+    }
+
     /// Returns `true` if an extension with this requirement can use a host
     /// that supplies `version`.
     pub fn matches(&self, version: ApiVersion) -> bool {
-        let minimum = (self.major, self.minor.unwrap_or(0), self.patch.unwrap_or(0));
+        let minimum = self.minimum();
+        let minimum = (minimum.major, minimum.minor, minimum.patch);
         // The first part that is not 0 sets the limit. Before version 1.0.0,
         // a minor version can have breaking changes.
         let limit = match (self.major, self.minor, self.patch) {
@@ -136,11 +160,6 @@ mod tests {
             minor,
             patch,
         }
-    }
-
-    #[test]
-    fn current_version_is_the_version_of_the_crate() {
-        assert_eq!(ApiVersion::CURRENT.to_string(), env!("CARGO_PKG_VERSION"));
     }
 
     #[test]

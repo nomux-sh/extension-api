@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use prost::Message;
 
+use crate::api_version::{ApiRequirement, ApiVersion};
 use crate::call::Call;
 use crate::cancellation::Cancellations;
 use crate::error::{CallError, RunError};
@@ -30,6 +31,7 @@ type Initialize = Box<dyn FnOnce(&Host) -> Result<(), CallError>>;
 pub struct Extension {
     id: String,
     version: String,
+    api: ApiVersion,
     methods: HashMap<String, Method>,
     initialize: Option<Initialize>,
     is_initialized: bool,
@@ -45,10 +47,33 @@ impl Extension {
         Self {
             id: id.into(),
             version: version.into(),
+            api: ApiVersion::MINIMUM,
             methods: HashMap::new(),
             initialize: None,
             is_initialized: false,
         }
+    }
+
+    /// States the lowest extension API version that the extension needs. The
+    /// default is [`ApiVersion::MINIMUM`]. State a later version only if the
+    /// extension uses a feature of that version, and give `api` in
+    /// `extension.toml` the same minimum: `version` 0.1.1 and `api = "^0.1.1"`.
+    ///
+    /// The extension refuses a host whose version does not match the caret
+    /// requirement of `version`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if this crate does not implement `version`: if
+    /// [`ApiVersion::CURRENT`] does not match its caret requirement.
+    pub fn requires_api(mut self, version: ApiVersion) -> Self {
+        assert!(
+            ApiRequirement::from(version).matches(ApiVersion::CURRENT),
+            "the SDK implements the extension API version {}, not {version}",
+            ApiVersion::CURRENT
+        );
+        self.api = version;
+        self
     }
 
     /// Adds a method that the host can call.
@@ -111,7 +136,9 @@ impl Extension {
     ) -> Result<(), RunError> {
         let mut input = BufReader::new(input);
         let outbound = Outbound::new(output);
-        let permissions = handshake::accept(&mut input, &outbound, &self.id, &self.version)?;
+        let requirement = ApiRequirement::from(self.api);
+        let permissions =
+            handshake::accept(&mut input, &outbound, &self.id, &self.version, requirement)?;
         let link = Arc::new(Link {
             outbound,
             pending: PendingCalls::new(),

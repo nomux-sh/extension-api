@@ -2,10 +2,11 @@
 //! extension. It is also the conformance extension of the Rust SDK: it has
 //! the methods that `conformance/README.md` describes.
 
+use std::env;
 use std::thread;
 use std::time::{Duration, Instant};
 
-use nomux_extension::{Call, CallError, Extension, RunError};
+use nomux_extension::{ApiVersion, Call, CallError, Extension, RunError};
 
 /// The argument and the result of the `echo` and `relay` methods.
 #[derive(Clone, PartialEq, prost::Message)]
@@ -49,10 +50,32 @@ fn relay(call: &Call, input: Text) -> Result<Text, CallError> {
     call.host().call("conformance.reverse", &input)
 }
 
+/// The extension API version that the conformance suite tells the extension
+/// to ask for, for example `0.1.1`. An extension that uses a feature of a
+/// later version calls `requires_api` with a constant.
+fn requested_api() -> Option<ApiVersion> {
+    let text = env::var("NOMUX_CONFORMANCE_API").ok()?;
+    let parts: Vec<u32> = text
+        .split('.')
+        .filter_map(|part| part.parse().ok())
+        .collect();
+    let [major, minor, patch] = parts[..] else {
+        panic!("NOMUX_CONFORMANCE_API is not a version: {text}");
+    };
+    Some(ApiVersion {
+        major,
+        minor,
+        patch,
+    })
+}
+
 fn main() -> Result<(), RunError> {
-    Extension::new("nomux.echo", env!("CARGO_PKG_VERSION"))
+    let mut extension = Extension::new("nomux.echo", env!("CARGO_PKG_VERSION"))
         .method("echo", echo)
         .method("wait", wait)
-        .method("relay", relay)
-        .run()
+        .method("relay", relay);
+    if let Some(version) = requested_api() {
+        extension = extension.requires_api(version);
+    }
+    extension.run()
 }

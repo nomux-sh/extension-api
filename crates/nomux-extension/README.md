@@ -49,6 +49,23 @@ fn main() -> Result<(), RunError> {
 
 The standard output carries the protocol. Write logs to the standard error.
 
+## Extension API version
+
+The version of the crate is not the extension API version. `ApiVersion::CURRENT` is the extension API version that the crate implements: 0.1.1. It changes only when the protocol or the manifest format changes.
+
+An extension asks the host for `^` and the lowest version that it needs. By default, this is `ApiVersion::MINIMUM`: 0.1.0. Thus an extension built with a new release of the crate also runs on an earlier host. If the extension uses a feature of a later version, state the version, and give `api` in `extension.toml` the same minimum:
+
+```rust,no_run
+use nomux_extension::{ApiVersion, Extension, RunError};
+
+fn main() -> Result<(), RunError> {
+    // api = "^0.1.1" in extension.toml
+    Extension::new("nomux.agent-tool", env!("CARGO_PKG_VERSION"))
+        .requires_api(ApiVersion { major: 0, minor: 1, patch: 1 })
+        .run()
+}
+```
+
 ## Specification
 
 The schemas, the protocol specification, the JSON Schema of `extension.toml` and an example extension are in the [extension-api repository](https://github.com/nomux-sh/extension-api).

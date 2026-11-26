@@ -5,7 +5,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"os"
 	"time"
 
 	extension "github.com/nomux-sh/extension-api/sdk/go"
@@ -50,8 +52,25 @@ func relay(ctx context.Context, host *extension.Host, payload []byte) ([]byte, e
 	return host.Call(ctx, "conformance.reverse", payload)
 }
 
+// requestedAPI reads the extension API version that the conformance suite
+// tells the extension to ask for, for example 0.1.1. An extension that uses a
+// feature of a later version calls RequireAPI with a constant.
+func requestedAPI() (version extension.Version, ok bool) {
+	text, ok := os.LookupEnv("NOMUX_CONFORMANCE_API")
+	if !ok {
+		return version, false
+	}
+	if _, err := fmt.Sscanf(text, "%d.%d.%d", &version.Major, &version.Minor, &version.Patch); err != nil {
+		log.Fatalf("NOMUX_CONFORMANCE_API is not a version: %s", text)
+	}
+	return version, true
+}
+
 func main() {
 	ext := extension.New("nomux.echo-go", "0.1.0")
+	if version, ok := requestedAPI(); ok {
+		ext.RequireAPI(version)
+	}
 	ext.Handle("echo", echo)
 	ext.Handle("wait", wait)
 	ext.Handle("relay", relay)

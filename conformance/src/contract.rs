@@ -31,6 +31,12 @@ pub const DENIED_TEXT: &str = "deny";
 /// The message of the failure of `conformance.reverse`.
 pub const DENIED_MESSAGE: &str = "the extension has no scope for conformance.reverse";
 
+/// The environment variable that gives the extension API version that the
+/// extension asks for, for example `0.1.1`. The extension gives it to the
+/// option of its SDK. Without the variable, the extension asks for the
+/// default version of its SDK.
+pub const REQUESTED_API: &str = "NOMUX_CONFORMANCE_API";
+
 /// The event of `echo`.
 pub const ECHOED: &str = "echoed";
 /// The event of `wait`.

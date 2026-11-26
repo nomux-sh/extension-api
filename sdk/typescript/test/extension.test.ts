@@ -2,7 +2,6 @@
 // conformance extension. The suite in conformance/ covers the protocol.
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { PassThrough } from "node:stream";
 import { test } from "node:test";
 
@@ -88,13 +87,6 @@ function errorCode(result: Response["result"]): ErrorCode | undefined {
   return result?.$case === "error" ? result.value.code : undefined;
 }
 
-test("the extension API version is the package version", () => {
-  const packageJson: unknown = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8"));
-  assert.ok(typeof packageJson === "object" && packageJson !== null && "version" in packageJson);
-  const { major, minor, patch } = API_VERSION;
-  assert.equal(`${major}.${minor}.${patch}`, packageJson.version);
-});
-
 test("frames that arrive one byte at a time are read", async () => {
   const extension = new Extension("nomux.test", "1.0.0").method("echo", { input: bytes, output: bytes }, (input) => input);
   const host = new TestHost(extension);
@@ -172,4 +164,9 @@ test("no method runs when the initialization failed", async () => {
   assert.equal(errorCode(after), ErrorCode.FAILED);
   assert.equal(runs, 0);
   await host.shutdown();
+});
+
+test("a requirement of a version that the package does not implement throws", () => {
+  const later = { ...API_VERSION, patch: API_VERSION.patch + 1 };
+  assert.throws(() => new Extension("nomux.test", "1.0.0").requiresApi(later), /implements the extension API version/);
 });

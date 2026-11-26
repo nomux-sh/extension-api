@@ -16,9 +16,17 @@ type Version struct {
 }
 
 // APIVersion returns the extension API version that this module implements.
-// It is equal to the version of the module.
+// The extension sends it in Welcome. It changes only when the protocol or the
+// manifest format changes. It is not the version of the module.
 func APIVersion() Version {
-	return Version{Major: 0, Minor: 1, Patch: 2}
+	return Version{Major: 0, Minor: 1, Patch: 1}
+}
+
+// MinimumAPIVersion returns the lowest extension API version that has each
+// feature that the SDK uses. An extension asks the host for this version,
+// unless it states a later version with [Extension.RequireAPI].
+func MinimumAPIVersion() Version {
+	return Version{Major: 0, Minor: 1, Patch: 0}
 }
 
 // String formats the version as major.minor.patch.

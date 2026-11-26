@@ -6,10 +6,12 @@ import (
 	"github.com/nomux-sh/extension-api/sdk/go/internal/wire"
 )
 
-// identity is the identifier and the version of the extension.
+// identity is the identifier and the version of the extension, and the lowest
+// extension API version that it needs.
 type identity struct {
 	id      string
 	version string
+	api     Version
 }
 
 // answerHello reads the first message of the host and applies the version
@@ -22,8 +24,8 @@ func answerHello(envelope *wire.Envelope, extension identity) (response *wire.Re
 		return nil, Permissions{}, ErrNoHello
 	}
 	host := versionFromWire(hello.GetApiVersion())
-	if !APIVersion().accepts(host) {
-		message := fmt.Sprintf("the extension needs the extension API version ^%s, but the host supplies %s", APIVersion(), host)
+	if !extension.api.accepts(host) {
+		message := fmt.Sprintf("the extension needs the extension API version ^%s, but the host supplies %s", extension.api, host)
 		refusal := &Error{Code: CodeVersionIncompatible, Message: message}
 		response := &wire.Response{Id: request.GetId(), Result: &wire.Response_Error{Error: refusal.toWire()}}
 		return response, Permissions{}, fmt.Errorf("%w: %s", ErrIncompatibleAPI, message)

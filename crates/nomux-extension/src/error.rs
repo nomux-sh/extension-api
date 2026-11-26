@@ -81,8 +81,8 @@ pub enum RunError {
     Frame(FrameError),
     /// The first message from the host was not `Hello`.
     NoHello,
-    /// The host does not supply the extension API version that this crate
-    /// needs.
+    /// The host does not supply an extension API version that the extension
+    /// can use.
     IncompatibleApi {
         /// The extension API version of the host.
         host: ApiVersion,
@@ -98,8 +98,7 @@ impl fmt::Display for RunError {
             Self::NoHello => f.write_str("the first message from the host was not `Hello`"),
             Self::IncompatibleApi { host } => write!(
                 f,
-                "the host supplies the extension API version {host}, but this extension needs {}",
-                crate::ApiRequirement::from(ApiVersion::CURRENT)
+                "the host supplies the extension API version {host}, which this extension cannot use"
             ),
             Self::Disconnected => {
                 f.write_str("the host closed the stream and did not send a shutdown request")

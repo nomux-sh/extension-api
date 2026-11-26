@@ -3,13 +3,25 @@ import type { ApiVersion } from "./generated/nomux/extension/v1/handshake.js";
 export type { ApiVersion };
 
 /**
- * The extension API version that this package implements. It is equal to the
- * version of the package.
+ * The extension API version that this package implements. The extension sends
+ * it in `Welcome`. It changes only when the protocol or the manifest format
+ * changes. It is not the version of the package.
  */
 export const API_VERSION: Readonly<ApiVersion> = Object.freeze({
   major: 0,
   minor: 1,
-  patch: 2,
+  patch: 1,
+});
+
+/**
+ * The lowest extension API version that has each feature that the SDK uses.
+ * An extension asks the host for this version, unless it states a later
+ * version with `Extension.requiresApi`.
+ */
+export const MINIMUM_API_VERSION: Readonly<ApiVersion> = Object.freeze({
+  major: 0,
+  minor: 1,
+  patch: 0,
 });
 
 /** Formats a version as `major.minor.patch`. */

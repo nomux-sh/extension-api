@@ -55,10 +55,12 @@ pub struct Process {
 }
 
 impl Process {
-    /// Starts `command` and connects a host to it. `timed_out` becomes `true`
-    /// if the watchdog ends the process at `deadline`.
+    /// Starts `command` with the added `environment` and connects a host to
+    /// it. `timed_out` becomes `true` if the watchdog ends the process at
+    /// `deadline`.
     pub fn start(
         command: &[OsString],
+        environment: &[(&str, String)],
         show_stderr: bool,
         deadline: Instant,
         timed_out: Arc<AtomicBool>,
@@ -71,6 +73,7 @@ impl Process {
         };
         let mut child = Command::new(program)
             .args(arguments)
+            .envs(environment.iter().map(|(name, value)| (name, value)))
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(stderr)

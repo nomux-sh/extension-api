@@ -9,7 +9,8 @@ Rules for coding agents and for people who work in this repository. `CLAUDE.md` 
 | Path | Responsibility |
 |---|---|
 | `proto/nomux/extension/v1/` | Protobuf schemas of the package `nomux.extension.v1`: envelope, handshake, life cycle and calls. |
-| `spec/extension-protocol.md` | Specification of the extension protocol: framing, limits, life cycle, version rule. |
+| `spec/extension-protocol.md` | Specification of the extension protocol: framing, limits, life cycle, version rule, table of the extension API versions. |
+| `spec/api-version.toml` | The current and the minimum extension API version: the source of the constants of the SDKs. |
 | `schema/extension.schema.json` | JSON Schema of `extension.toml`. |
 | `crates/nomux-extension/` | The published crate: the SDK for the daemon part of an extension. |
 | `crates/nomux-extension/src/generated/` | Output of `buf generate`. Committed. Not edited by hand. |
@@ -26,6 +27,7 @@ Rules for coding agents and for people who work in this repository. `CLAUDE.md` 
 | `package.json`, `package-lock.json` | The npm workspace of the TypeScript SDK and its example. |
 | `tools/protoc-gen-nomux-prost/` | The `buf` plugin that writes the generated Rust code. Not published. |
 | `scripts/check-generated.sh` | Fails when the generated code is stale. |
+| `scripts/check-api-version.sh` | Fails when a constant of an SDK is not equal to `spec/api-version.toml`. |
 | `buf.yaml`, `buf.gen.yaml` | `buf` module, lint rules, breaking change rules, code generation. |
 | `Cargo.toml`, `deny.toml`, `rust-toolchain.toml` | Workspace members and shared versions, license and source policy, pinned toolchain. |
 | `cliff.toml`, `CHANGELOG.md` | Changelog configuration and the changelog. |
@@ -43,7 +45,9 @@ Rules for coding agents and for people who work in this repository. `CLAUDE.md` 
 - The dependencies of the manifest validator stay behind the feature `manifest`. An extension does not build them.
 - `spec/extension-protocol.md`, the schemas and the crate describe one protocol. Change them together.
 - `schema/extension.schema.json` and `crates/nomux-extension/src/manifest/` describe one manifest format. Change them together.
-- `ApiVersion::CURRENT` is equal to the version of the crate, `API_VERSION` of `@nomux-sh/extension` is equal to the version of the package, and `APIVersion()` of the Go SDK is equal to the version of the crate. Tests compare them. The SDKs have the version of the extension API: change them together.
+- The extension API version is not the version of a package. `spec/api-version.toml` has the current version and the minimum version. `ApiVersion::CURRENT` and `ApiVersion::MINIMUM` of the crate, `API_VERSION` and `MINIMUM_API_VERSION` of `@nomux-sh/extension`, and `APIVersion()` and `MinimumAPIVersion()` of the Go SDK have the same values. `scripts/check-api-version.sh` compares them.
+- Change the current extension API version only when the protocol or the manifest format changes. Then add a row to the table "Versions" of `spec/extension-protocol.md`. Change the minimum version only when the core path of an SDK uses a feature of a later version.
+- The crate, the npm package and the Go module have one release version. Change them together.
 - The TypeScript SDK has one runtime dependency, `@bufbuild/protobuf`. Import only its `wire` module. Do not add a runtime dependency: an extension starts on the first call, and each module adds to the start time.
 - The Go SDK has one dependency, `google.golang.org/protobuf`. `sdk/go/go.mod` pins its version, and `buf generate` builds `protoc-gen-go` from the same version. `examples/echo-go/go.mod` has the same version. Do not add a dependency or cgo. Do not use `unsafe` in the code of the SDK: only the generated code and the protobuf runtime use it.
 - A Go module version is a tag with the prefix of its directory: `sdk/go/vX.Y.Z`. Do not change the trigger of `release.yml` to a pattern that matches this tag.
@@ -62,6 +66,7 @@ buf lint
 buf format --diff --exit-code
 buf build
 scripts/check-generated.sh
+scripts/check-api-version.sh
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo nextest run --workspace
